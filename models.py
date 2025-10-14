@@ -1,15 +1,88 @@
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy.orm import relationship
 from connections import Base
 
+# =========================
+# User Model (Authentication)
+# =========================
 class User(Base):
-    __tablename__ = "users"  # Table name in MySQL database
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(100), nullable=False, unique=True)
     password = Column(String(255), nullable=False)
 
+    # One-to-one relationship with CompleteProfile
+    profile = relationship("CompleteProfile", back_populates="user", uselist=False)
+
     def __init__(self, username, password):
         self.username = username
         self.password = password
 
-    
+
+# =========================
+# CompleteProfile Model
+# =========================
+class CompleteProfile(Base):
+    __tablename__ = "complete_profile"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Link to User (one-to-one)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    user = relationship("User", back_populates="profile")
+
+    # Student Details
+    first_name = Column(String(100), nullable=False)
+    middle_name = Column(String(100), nullable=True)
+    last_name = Column(String(100), nullable=False)
+    contact_no = Column(String(20), nullable=False)
+    guardian_name = Column(String(100), nullable=False)
+    form = Column(String(20), nullable=False)  # Must have a class (Form 1-4)
+
+    def __init__(self, user_id, first_name, last_name, contact_no, guardian_name, form, middle_name=None):
+        self.user_id = user_id
+        self.first_name = first_name
+        self.middle_name = middle_name
+        self.last_name = last_name
+        self.contact_no = contact_no
+        self.guardian_name = guardian_name
+        self.form = form
+
+
+# =========================
+# Example Additional Models
+# =========================
+# You can expand this with more tables for:
+# - Live Classes
+# - Revision Materials
+# - Videos
+# Each table can have a ForeignKey to CompleteProfile or User
+
+# Example: LiveClasses
+class LiveClass(Base):
+    __tablename__ = "live_classes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(200), nullable=False)
+    link = Column(String(500), nullable=False)
+    time = Column(String(50), nullable=True)
+    form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
+
+# Example: RevisionMaterials
+class RevisionMaterial(Base):
+    __tablename__ = "revision_materials"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(200), nullable=False)
+    link = Column(String(500), nullable=False)
+    form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
+
+# Example: Videos
+class Video(Base):
+    __tablename__ = "videos"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(200), nullable=False)
+    link = Column(String(500), nullable=False)
+    form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
