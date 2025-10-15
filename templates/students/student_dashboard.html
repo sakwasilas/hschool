@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Student Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -51,12 +51,14 @@
       align-items: center;
       margin-bottom: 1.5rem;
       border-radius: 0.5rem;
+      flex-wrap: wrap;
     }
     .top-bar .stats {
       display: flex;
       gap: 1rem;
+      flex-wrap: wrap;
     }
-    .top-bar .stats .stat {
+    .top-bar .stat {
       background: linear-gradient(135deg, #3b82f6, #60a5fa);
       color: white;
       padding: 0.5rem 1rem;
@@ -65,11 +67,8 @@
       min-width: 80px;
       transition: transform 0.2s;
     }
-    .top-bar .stats .stat:hover {
+    .top-bar .stat:hover {
       transform: translateY(-2px);
-    }
-    .top-bar .actions button {
-      margin-left: 0.5rem;
     }
 
     /* Section titles */
@@ -137,7 +136,7 @@
     <!-- Sidebar -->
     <nav class="col-12 col-md-3 col-lg-2 sidebar d-flex flex-column sticky-top">
       <div class="text-center mb-4">
-        
+        <i class="bi bi-person-circle fs-1 text-primary"></i>
         <h5>{{ student.full_name }}</h5>
       </div>
       <p><strong>Form:</strong> {{ student.form }}</p>
@@ -166,72 +165,68 @@
             <small>Videos</small>
           </div>
         </div>
-        <div class="actions">
-          <button class="btn btn-primary btn-sm"><i class="bi bi-bell"></i> Notifications</button>
-          <button class="btn btn-success btn-sm"><i class="bi bi-envelope"></i> Messages</button>
-        </div>
       </div>
 
       <h2 class="text-center mb-4">Student Dashboard</h2>
 
-      <!-- Live Classes Section -->
-      <div class="section-title">Live Classes</div>
-      <div class="row">
-        {% if live_classes %}
-          {% for cls in live_classes %}
-          <div class="col-md-6 col-lg-4">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">{{ cls.title }}</h5>
-                <p class="card-text"><strong>Time:</strong> {{ cls.time }}</p>
-                <a href="{{ cls.link }}" target="_blank" class="btn btn-primary btn-sm">Join Class</a>
-              </div>
+      <!-- Live Classes -->
+      <div class="section-title">📡 Live Classes</div>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+        {% for cls in live_classes %}
+        <div class="col">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">{{ cls.title }}</h5>
+              <p><strong>Subject:</strong> {{ cls.subject or "N/A" }}</p>
+              <p><strong>Time:</strong> {{ cls.time or "TBA" }}</p>
+              <p><strong>Form:</strong> {{ cls.form or "All" }}</p>
+              <a href="{{ cls.link }}" target="_blank" class="btn btn-primary btn-sm">
+                <i class="bi bi-camera-video"></i> Join Class
+              </a>
             </div>
           </div>
-          {% endfor %}
+        </div>
         {% else %}
-          <p>No live classes scheduled.</p>
-        {% endif %}
+        <p class="text-muted">No live classes available yet.</p>
+        {% endfor %}
       </div>
 
-      <!-- Revision Materials Section -->
-      <div class="section-title">Revision Materials</div>
-      <div class="row">
-        {% if revision_materials %}
-          {% for mat in revision_materials %}
-          <div class="col-md-6 col-lg-4">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">{{ mat.title }}</h5>
-                <a href="{{ mat.link }}" target="_blank" class="btn btn-success btn-sm">Download / View</a>
-              </div>
+      <!-- Revision Materials -->
+      <div class="section-title">📘 Revision Materials</div>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+        {% for mat in revision_materials %}
+        <div class="col">
+          <div class="card h-100">
+            <div class="card-body">
+              <h5 class="card-title">{{ mat.title }}</h5>
+              <a href="{{ mat.link }}" target="_blank" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-arrow-down"></i> View / Download
+              </a>
             </div>
           </div>
-          {% endfor %}
+        </div>
         {% else %}
-          <p>No revision materials available.</p>
-        {% endif %}
+        <p class="text-muted">No revision materials available.</p>
+        {% endfor %}
       </div>
 
-      <!-- Videos Section -->
-      <div class="section-title">Videos</div>
-      <div class="row">
-        {% if videos %}
-          {% for video in videos %}
-          <div class="col-md-6 col-lg-4">
-            <div class="card">
-              <div class="ratio ratio-16x9">
-                <iframe src="{{ video.link }}" title="{{ video.title }}" allowfullscreen></iframe>
-              </div>
-              <div class="card-body">
-                <h6 class="card-title">{{ video.title }}</h6>
-              </div>
+      <!-- Videos -->
+      <div class="section-title">🎥 Videos</div>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+        {% for video in videos %}
+        <div class="col">
+          <div class="card h-100">
+            <div class="ratio ratio-16x9">
+              <iframe src="{{ video.link }}" title="{{ video.title }}" allowfullscreen></iframe>
+            </div>
+            <div class="card-body">
+              <h6 class="card-title">{{ video.title }}</h6>
             </div>
           </div>
-          {% endfor %}
+        </div>
         {% else %}
-          <p>No videos available.</p>
-        {% endif %}
+        <p class="text-muted">No videos available.</p>
+        {% endfor %}
       </div>
 
     </main>
@@ -240,7 +235,7 @@
 
 <!-- Footer -->
 <footer>
-  &copy; {{ current_year }} All rights reserved.
+  &copy; {{ current_year }} InterSurf Learning Portal. All rights reserved.
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

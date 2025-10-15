@@ -5,15 +5,18 @@ from models import User
 db = SessionLocal()
 
 try:
-   
     admin = db.query(User).filter_by(username="admin").first()
 
     if not admin:
-       
-        new_admin = User(username="admin", password="admin123")
+        # Include the role field
+        new_admin = User(
+            username="admin",
+            password="admin123",
+            role="admin"
+        )
         db.add(new_admin)
         db.commit()
-        print("✅ Default admin created: username=admin, password=admin123")
+        print("✅ Default admin created: username=admin, password=admin123, role=admin")
     else:
         print("ℹ️ Admin already exists in the database")
 

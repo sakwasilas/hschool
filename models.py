@@ -11,13 +11,15 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(100), nullable=False, unique=True)
     password = Column(String(255), nullable=False)
+    role = Column(String(50), nullable=False) # roles: admin, student, teacher
 
     # One-to-one relationship with CompleteProfile
     profile = relationship("CompleteProfile", back_populates="user", uselist=False)
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, role):
         self.username = username
         self.password = password
+        self.role = role
 
 
 # =========================
@@ -51,15 +53,8 @@ class CompleteProfile(Base):
 
 
 # =========================
-# Example Additional Models
+# LiveClass Model
 # =========================
-# You can expand this with more tables for:
-# - Live Classes
-# - Revision Materials
-# - Videos
-# Each table can have a ForeignKey to CompleteProfile or User
-
-# Example: LiveClasses
 class LiveClass(Base):
     __tablename__ = "live_classes"
 
@@ -67,9 +62,12 @@ class LiveClass(Base):
     title = Column(String(200), nullable=False)
     link = Column(String(500), nullable=False)
     time = Column(String(50), nullable=True)
-    form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
+    form = Column(String(200), nullable=True)  # Optional: specify which form/class can access
+    subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)
 
-# Example: RevisionMaterials
+# =========================
+# RevisionMaterial Model
+# =========================
 class RevisionMaterial(Base):
     __tablename__ = "revision_materials"
 
@@ -78,7 +76,10 @@ class RevisionMaterial(Base):
     link = Column(String(500), nullable=False)
     form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
 
-# Example: Videos
+
+# =========================
+# Video Model
+# =========================
 class Video(Base):
     __tablename__ = "videos"
 
@@ -86,3 +87,4 @@ class Video(Base):
     title = Column(String(200), nullable=False)
     link = Column(String(500), nullable=False)
     form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
+    subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)

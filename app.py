@@ -1,36 +1,82 @@
-from flask import Flask, render_template, url_for, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from connections import SessionLocal
-from models import User,CompleteProfile
+from models import User, CompleteProfile, LiveClass, RevisionMaterial, Video
 from datetime import datetime
+from functools import wraps
+from sqlalchemy import func
+
 
 app = Flask(__name__)
-app.secret_key = "silaswanyamarechosilasayangaamukowaivansamuel"  
+app.secret_key = "silaswanyamarechosilasayangaamukowaivansamuel"
 
+# =========================
+# Role-based Access Decorator
+# =========================
+def role_required(required_role):
+    def decorator(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if "user_id" not in session or "role" not in session:
+                return redirect(url_for("login"))
+            if session["role"] != required_role:
+                return "Access Denied", 403
+            return f(*args, **kwargs)
+        return wrapped
+    return decorator
+
+# =========================
+# Home Route
+# =========================
 @app.route('/')
 def home():
     return redirect(url_for('login'))
 
-
-# ✅ LOGIN
-@app.route('/login', methods=['GET', 'POST'])
+# =========================
+# Login
+# =========================
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    message = ""
-    if request.method == 'POST':
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
         db = SessionLocal()
-        username = request.form['username']
-        password = request.form['password']
-        user = db.query(User).filter_by(username=username, password=password).first()
-        db.close()
+        user = db.query(User).filter_by(username=username).first()
 
-        if user:
-            session['user_id'] = user.id
-            return redirect(url_for('complete_profile'))
+        # Plain text password check (since no hashing)
+        if user and user.password == password:
+            # Store user info before closing DB
+            role = user.role
+            user_id = user.id
+
+            # Close DB before using session
+            db.close()
+
+            # Set session data
+            session["user_id"] = user_id
+            session["role"] = role
+
+            # Redirect based on role
+            if role == "admin":
+                return redirect(url_for("admin_dashboard"))
+            elif role == "teacher":
+                return redirect(url_for("teacher_dashboard"))
+            elif role == "student":
+                return redirect(url_for("complete_profile"))
+            else:
+                return "Role not recognized", 403
+
         else:
-            message = "Invalid username or password"
-    return render_template('login.html', message=message)
+            db.close()
+            flash("Invalid credentials", "danger")
+
+    return render_template("login.html")
 
 
-# ✅ REGISTER
+# =========================
+# Register
+# =========================
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     message = ""
@@ -38,31 +84,39 @@ def register():
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        role = request.form.get("role", "student")  # default role: student
 
         if password != confirm_password:
             message = "Passwords do not match"
-            return render_template('register.html', message=message)
         else:
             db = SessionLocal()
             existing_user = db.query(User).filter_by(username=username).first()
 
             if existing_user:
                 message = "Username already exists"
-                db.close()
-                return render_template('register.html', message=message)
             else:
-                new_user = User(username=username, password=password)
+                # ✅ store plain password directly
+                new_user = User(username=username, password=password, role=role)
                 db.add(new_user)
                 db.commit()
                 db.close()
-                # Redirect to login after successful registration
                 return redirect(url_for('login'))
+
+            db.close()
 
     return render_template('register.html', message=message)
 
+# =========================
+# Logout
+# =========================
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
-
-# ✅ FORGOT PASSWORD
+# =========================
+# Forgot Password
+# =========================
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     message = ""
@@ -71,14 +125,15 @@ def forgot_password():
         db = SessionLocal()
         user = db.query(User).filter_by(username=username).first()
         db.close()
-
         if user:
             return redirect(url_for('reset_password', username=username))
         else:
             message = "No account found with that username."
     return render_template('forgot_password.html', message=message)
 
-
+# =========================
+# Reset Password
+# =========================
 @app.route('/reset_password/<username>', methods=['GET', 'POST'])
 def reset_password(username):
     message = ""
@@ -92,117 +147,322 @@ def reset_password(username):
             db = SessionLocal()
             user = db.query(User).filter_by(username=username).first()
             if user:
-                user.password = new_password
+                user.password = generate_password_hash(new_password)
                 db.commit()
                 message = "Password updated successfully! You can now log in."
-            else:
-                message = "User not found."
             db.close()
             return redirect(url_for('login'))
     return render_template('reset_password.html', message=message, username=username)
 
-# ---------- COMPLETE PROFILE ----------
+# =========================
+# Complete Profile
+# =========================
 @app.route('/complete_profile', methods=['GET', 'POST'])
 def complete_profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    db = SessionLocal()
-    user = db.query(User).filter_by(id=session['user_id']).first()
+    # Use context manager to auto-close session
+    with SessionLocal() as db:
+        user = db.query(User).filter_by(id=session['user_id']).first()
+        if not user:
+            return redirect(url_for('login'))
 
-    if not user:
-        db.close()
-        return redirect(url_for('login'))
+        profile = user.profile
 
-    # Check if profile exists
-    profile = user.profile
+        if request.method == 'POST':
+            first_name = request.form['first_name']
+            middle_name = request.form.get('middle_name')
+            last_name = request.form['last_name']
+            contact_no = request.form['contact_no']
+            guardian_name = request.form['guardian_name']
+            form_selected = request.form['form']
 
-    if request.method == 'POST':
-        first_name = request.form['first_name']
-        middle_name = request.form.get('middle_name')
-        last_name = request.form['last_name']
-        contact_no = request.form['contact_no']
-        guardian_name = request.form['guardian_name']
-        form_selected = request.form['form']
+            if profile:
+                profile.first_name = first_name
+                profile.middle_name = middle_name
+                profile.last_name = last_name
+                profile.contact_no = contact_no
+                profile.guardian_name = guardian_name
+                profile.form = form_selected
+            else:
+                profile = CompleteProfile(
+                    user_id=user.id,
+                    first_name=first_name,
+                    middle_name=middle_name,
+                    last_name=last_name,
+                    contact_no=contact_no,
+                    guardian_name=guardian_name,
+                    form=form_selected
+                )
+                db.add(profile)
 
-        if profile:
-            # Update existing profile
-            profile.first_name = first_name
-            profile.middle_name = middle_name
-            profile.last_name = last_name
-            profile.contact_no = contact_no
-            profile.guardian_name = guardian_name
-            profile.form = form_selected
+            db.commit()
+
+            # Capture the role before the session closes
+            role = user.role
+
         else:
-            # Create new profile
-            profile =CompleteProfile(
-                user_id=user.id,
-                first_name=first_name,
-                middle_name=middle_name,
-                last_name=last_name,
-                contact_no=contact_no,
-                guardian_name=guardian_name,
-                form=form_selected
-            )
-            db.add(profile)
+            profile_data = profile.__dict__ if profile else {}
+            role = None  # not used on GET
 
-        db.commit()
-        db.close()
-        return redirect(url_for('dashboard'))
+    # Session automatically closed here ✅
 
-    # Pre-fill form if profile exists
-    profile_data = profile.__dict__ if profile else {}
-    db.close()
+    # Redirect based on role only after DB session closes
+    if request.method == 'POST':
+        if role == "admin":
+            return redirect(url_for("admin_dashboard"))
+        elif role == "teacher":
+            return redirect(url_for("teacher_dashboard"))
+        else:
+            return redirect(url_for("student_dashboard"))
+
     return render_template('students/complete_profile.html', profile=profile_data)
 
-# ---------- DASHBOARD ----------
-@app.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+
+from sqlalchemy import func, or_
+
+# =========================
+# Student Dashboard
+# =========================
+@app.route("/student")
+def student_dashboard():
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
 
     db = SessionLocal()
-    user = db.query(User).filter_by(id=session['user_id']).first()
+    try:
+        # Get logged-in user
+        user = db.query(User).filter_by(id=session["user_id"]).first()
+        if not user:
+            return redirect(url_for("login"))
 
-    if not user:
+        # Get student's full profile
+        profile = db.query(CompleteProfile).filter_by(user_id=user.id).first()
+        if not profile:
+            return "Profile not found for this user", 404
+
+        student_form = profile.form.strip().lower()  # normalize
+
+        # ✅ Fetch Live Classes (matching form or 'all')
+        live_classes = db.query(LiveClass).filter(
+            func.lower(func.trim(LiveClass.form)).in_([student_form, "all", ""])
+        ).all()
+
+        # ✅ Fetch Revision Materials
+        revision_materials = db.query(RevisionMaterial).filter(
+            func.lower(func.trim(RevisionMaterial.form)).in_([student_form, "all", ""])
+        ).all()
+
+        # ✅ Fetch Videos
+        videos = db.query(Video).filter(
+            func.lower(func.trim(Video.form)).in_([student_form, "all", ""])
+        ).all()
+
+        # ✅ Pass everything to template
+        return render_template(
+            "students/student_dashboard.html",
+            student={
+                "full_name": f"{profile.first_name} {profile.last_name}",
+                "form": profile.form,
+                "phone": profile.contact_no,
+                "guardian_name": profile.guardian_name,
+            },
+            live_classes=live_classes,
+            revision_materials=revision_materials,
+            videos=videos,
+            current_year=datetime.now().year
+        )
+
+    finally:
         db.close()
-        return redirect(url_for('login'))
 
-    profile = user.profile
-    if not profile:
-        db.close()
-        return redirect(url_for('complete_profile'))
 
-    # Prepare student data
-    student_data = {
-        'full_name': f"{profile.first_name} {profile.middle_name or ''} {profile.last_name}".strip(),
-        'form': profile.form,
-        'phone': profile.contact_no,
-        'guardian_name': profile.guardian_name
-    }
 
-    # Example sections (replace with real queries)
-    live_classes = []          # Query LiveClass table filtering by profile.form
-    revision_materials = []    # Query RevisionMaterial table filtering by profile.form
-    videos = []                # Query Video table filtering by profile.form
+# =========================
+# Teacher Dashboard
+# =========================
+@app.route('/teacher')
+@role_required("teacher")
+def teacher_dashboard():
+    return render_template("teacher_dashboard.html")
 
+# =========================
+# Admin Dashboard
+# =========================
+@app.route('/admin')
+@role_required("admin")
+def admin_dashboard():
+    db = SessionLocal()
+    live_classes = db.query(LiveClass).all()
+    revision_materials = db.query(RevisionMaterial).all()
+    videos = db.query(Video).all()
+    current_year = datetime.now().year
     db.close()
-
     return render_template(
-        'students/student_dashboard.html',
-        student=student_data,
+        "admin/admin_dashboard.html",
         live_classes=live_classes,
         revision_materials=revision_materials,
-        videos=videos
+        videos=videos,
+        current_year=current_year
     )
 
+## =========================
+# Admin CRUD - Live Classes
+# =========================
+@app.route("/admin/live_class/add", methods=["POST"])
+@role_required("admin")
+def add_live_class():
+    db = SessionLocal()
 
-# ✅ LOGOUT
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
+    title = request.form.get("title")
+    link = request.form.get("link")
+    time = request.form.get("time")
+    form = request.form.get("form")
+    subject = request.form.get("subject")  # ✅ added
+
+    if not title or not link:
+        flash("Title and Link are required!", "danger")
+        db.close()
+        return redirect(url_for("admin_dashboard"))
+
+    new_class = LiveClass(
+        title=title,
+        link=link,
+        time=time,
+        form=form,
+        subject=subject  # ✅ added
+    )
+
+    db.add(new_class)
+    db.commit()
+    db.close()
+    flash("✅ Live class added successfully!", "success")
+    return redirect(url_for("admin_dashboard"))
 
 
-if __name__ == '__main__':
+@app.route("/admin/live_class/edit/<int:class_id>", methods=["GET", "POST"])
+@role_required("admin")
+def edit_live_class(class_id):
+    db = SessionLocal()
+    cls = db.query(LiveClass).get(class_id)
+    if request.method == "POST":
+        cls.title = request.form.get("title")
+        cls.link = request.form.get("link")
+        cls.time = request.form.get("time")
+        cls.form = request.form.get("form")
+        db.commit()
+        db.close()
+        flash("Live class updated!", "success")
+        return redirect(url_for("admin_dashboard"))
+    db.close()
+    return render_template("edit_live_class.html", cls=cls)
+
+@app.route("/admin/live_class/delete/<int:class_id>")
+@role_required("admin")
+def delete_live_class(class_id):
+    db = SessionLocal()
+    cls = db.query(LiveClass).get(class_id)
+    db.delete(cls)
+    db.commit()
+    db.close()
+    flash("Live class deleted!", "success")
+    return redirect(url_for("admin_dashboard"))
+
+# =========================
+# Admin CRUD - Materials
+# =========================
+@app.route("/admin/material/add", methods=["POST"])
+@role_required("admin")
+def add_material():
+    db = SessionLocal()
+    title = request.form.get("title")
+    link = request.form.get("link")
+    form = request.form.get("form")
+    if not title or not link:
+        flash("Title and Link are required!", "danger")
+        return redirect(url_for("admin_dashboard"))
+    mat = RevisionMaterial(title=title, link=link, form=form)
+    db.add(mat)
+    db.commit()
+    db.close()
+    flash("Material added successfully!", "success")
+    return redirect(url_for("admin_dashboard"))
+
+@app.route("/admin/material/edit/<int:material_id>", methods=["GET", "POST"])
+@role_required("admin")
+def edit_material(material_id):
+    db = SessionLocal()
+    mat = db.query(RevisionMaterial).get(material_id)
+    if request.method == "POST":
+        mat.title = request.form.get("title")
+        mat.link = request.form.get("link")
+        mat.form = request.form.get("form")
+        db.commit()
+        db.close()
+        flash("Material updated!", "success")
+        return redirect(url_for("admin_dashboard"))
+    db.close()
+    return render_template("edit_material.html", mat=mat)
+
+@app.route("/admin/material/delete/<int:material_id>")
+@role_required("admin")
+def delete_material(material_id):
+    db = SessionLocal()
+    mat = db.query(RevisionMaterial).get(material_id)
+    db.delete(mat)
+    db.commit()
+    db.close()
+    flash("Material deleted!", "success")
+    return redirect(url_for("admin_dashboard"))
+
+# =========================
+# Admin CRUD - Videos
+# =========================
+@app.route("/admin/video/add", methods=["POST"])
+@role_required("admin")
+def add_video():
+    db = SessionLocal()
+    title = request.form.get("title")
+    link = request.form.get("link")
+    form = request.form.get("form")
+    if not title or not link:
+        flash("Title and Link are required!", "danger")
+        return redirect(url_for("admin_dashboard"))
+    video = Video(title=title, link=link, form=form)
+    db.add(video)
+    db.commit()
+    db.close()
+    flash("Video added successfully!", "success")
+    return redirect(url_for("admin_dashboard"))
+
+@app.route("/admin/video/edit/<int:video_id>", methods=["GET", "POST"])
+@role_required("admin")
+def edit_video(video_id):
+    db = SessionLocal()
+    video = db.query(Video).get(video_id)
+    if request.method == "POST":
+        video.title = request.form.get("title")
+        video.link = request.form.get("link")
+        video.form = request.form.get("form")
+        db.commit()
+        db.close()
+        flash("Video updated!", "success")
+        return redirect(url_for("admin_dashboard"))
+    db.close()
+    return render_template("edit_video.html", video=video)
+
+@app.route("/admin/video/delete/<int:video_id>")
+@role_required("admin")
+def delete_video(video_id):
+    db = SessionLocal()
+    video = db.query(Video).get(video_id)
+    db.delete(video)
+    db.commit()
+    db.close()
+    flash("Video deleted!", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+if __name__ == "__main__":
     app.run(debug=True)
