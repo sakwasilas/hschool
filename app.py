@@ -5,6 +5,16 @@ from datetime import datetime
 from functools import wraps
 from sqlalchemy import func
 
+#=========================
+# File Upload Config                
+import os
+from werkzeug.utils import secure_filename                  
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'}
+UPLOAD_FOLDER = 'static/materials'
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+#=========================
+
 
 app = Flask(__name__)
 app.secret_key = "silaswanyamarechosilasayangaamukowaivansamuel"
@@ -157,28 +167,44 @@ def reset_password(username):
 # =========================
 # Complete Profile
 # =========================
+# =========================
+# Complete Profile
+# =========================
 @app.route('/complete_profile', methods=['GET', 'POST'])
 def complete_profile():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
+    user_id = session['user_id']
+
     # Use context manager to auto-close session
     with SessionLocal() as db:
-        user = db.query(User).filter_by(id=session['user_id']).first()
+        # Fetch user
+        user = db.query(User).filter_by(id=user_id).first()
         if not user:
+            flash("User not found", "danger")
             return redirect(url_for('login'))
 
-        profile = user.profile
+        # Fetch existing profile if any
+        profile = db.query(CompleteProfile).filter_by(user_id=user.id).first()
 
         if request.method == 'POST':
-            first_name = request.form['first_name']
-            middle_name = request.form.get('middle_name')
-            last_name = request.form['last_name']
-            contact_no = request.form['contact_no']
-            guardian_name = request.form['guardian_name']
-            form_selected = request.form['form']
+            # Get form data
+            first_name = request.form.get('first_name', '').strip()
+            middle_name = request.form.get('middle_name', '').strip()
+            last_name = request.form.get('last_name', '').strip()
+            contact_no = request.form.get('contact_no', '').strip()
+            guardian_name = request.form.get('guardian_name', '').strip()
+            form_selected = request.form.get('form', '').strip()
+
+            # Validate required fields
+            if not first_name or not last_name or not contact_no or not guardian_name or not form_selected:
+                flash("Please fill all required fields", "danger")
+                profile_data = profile.__dict__ if profile else {}
+                return render_template('students/complete_profile.html', profile=profile_data)
 
             if profile:
+                # Update existing profile
                 profile.first_name = first_name
                 profile.middle_name = middle_name
                 profile.last_name = last_name
@@ -186,6 +212,7 @@ def complete_profile():
                 profile.guardian_name = guardian_name
                 profile.form = form_selected
             else:
+                # Create new profile
                 profile = CompleteProfile(
                     user_id=user.id,
                     first_name=first_name,
@@ -197,27 +224,15 @@ def complete_profile():
                 )
                 db.add(profile)
 
-            db.commit()
+            db.commit()  # Save changes
+            flash("Profile saved successfully!", "success")
 
-            # Capture the role before the session closes
-            role = user.role
-
-        else:
-            profile_data = profile.__dict__ if profile else {}
-            role = None  # not used on GET
-
-    # Session automatically closed here ✅
-
-    # Redirect based on role only after DB session closes
-    if request.method == 'POST':
-        if role == "admin":
-            return redirect(url_for("admin_dashboard"))
-        elif role == "teacher":
-            return redirect(url_for("teacher_dashboard"))
-        else:
+            # Redirect to dashboard after saving
             return redirect(url_for("student_dashboard"))
 
-    return render_template('students/complete_profile.html', profile=profile_data)
+        # For GET request, pass profile data to template
+        profile_data = profile.__dict__ if profile else {}
+        return render_template('students/complete_profile.html', profile=profile_data)
 
 
 from sqlalchemy import func, or_
@@ -372,22 +387,29 @@ def delete_live_class(class_id):
 # =========================
 # Admin CRUD - Materials
 # =========================
-@app.route("/admin/material/add", methods=["POST"])
-@role_required("admin")
+@app.route('/add_material', methods=['POST'])
 def add_material():
-    db = SessionLocal()
-    title = request.form.get("title")
-    link = request.form.get("link")
-    form = request.form.get("form")
-    if not title or not link:
-        flash("Title and Link are required!", "danger")
-        return redirect(url_for("admin_dashboard"))
-    mat = RevisionMaterial(title=title, link=link, form=form)
-    db.add(mat)
-    db.commit()
-    db.close()
-    flash("Material added successfully!", "success")
-    return redirect(url_for("admin_dashboard"))
+
+    db= SessionLocal()
+    title = request.form['title']
+    subject = request.form['subject']
+    form_class = request.form['form']
+    file = request.files.get('file')
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        link = url_for('static', filename=f'materials/{filename}')
+
+        # Save to database
+        new_material = RevisionMaterial(title=title, subject=subject, form=form_class, link=link)
+        db.session.add(new_material)
+        db.session.commit()
+        flash("Material uploaded successfully!", "success")
+    else:
+        flash("Invalid file type.", "danger")
+
+    return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/material/edit/<int:material_id>", methods=["GET", "POST"])
 @role_required("admin")
