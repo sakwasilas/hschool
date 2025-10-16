@@ -387,29 +387,39 @@ def delete_live_class(class_id):
     return redirect(url_for("admin_dashboard"))
 
 # =========================
-# Admin CRUD - Materials
+# Admin - Upload Material
 # =========================
-@app.route('/add_material', methods=['POST'])
+@app.route('/admin/material/add', methods=['GET', 'POST'])
+@role_required("admin")
 def add_material():
+    if request.method == 'POST':
+        db = SessionLocal()
+        try:
+            title = request.form.get('title', '').strip()
+            subject = request.form.get('subject', '').strip()
+            form_class = request.form.get('form', '').strip()
+            file = request.files.get('file')
 
-    db= SessionLocal()
-    title = request.form['title']
-    subject = request.form['subject']
-    form_class = request.form['form']
-    file = request.files.get('file')
+            if not title or not subject or not form_class or not file:
+                flash("All fields are required", "danger")
+                return redirect(url_for('admin_dashboard'))
 
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        link = url_for('static', filename=f'materials/{filename}')
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                link = url_for('static', filename=f'materials/{filename}')
 
-        # Save to database
-        new_material = RevisionMaterial(title=title, subject=subject, form=form_class, link=link)
-        db.session.add(new_material)
-        db.session.commit()
-        flash("Material uploaded successfully!", "success")
-    else:
-        flash("Invalid file type.", "danger")
+                # Save to database
+                new_material = RevisionMaterial(title=title, subject=subject, form=form_class, link=link)
+                db.add(new_material)
+                db.commit()
+
+                flash("Material uploaded successfully!", "success")
+            else:
+                flash("Invalid file type", "danger")
+        finally:
+            db.close()
 
     return redirect(url_for('admin_dashboard'))
 
@@ -441,24 +451,36 @@ def delete_material(material_id):
     return redirect(url_for("admin_dashboard"))
 
 # =========================
-# Admin CRUD - Videos
+# Admin - Add Video
 # =========================
-@app.route("/admin/video/add", methods=["POST"])
+@app.route('/admin/video/add', methods=['GET', 'POST'])
 @role_required("admin")
 def add_video():
-    db = SessionLocal()
-    title = request.form.get("title")
-    link = request.form.get("link")
-    form = request.form.get("form")
-    if not title or not link:
-        flash("Title and Link are required!", "danger")
-        return redirect(url_for("admin_dashboard"))
-    video = Video(title=title, link=link, form=form)
-    db.add(video)
-    db.commit()
-    db.close()
-    flash("Video added successfully!", "success")
-    return redirect(url_for("admin_dashboard"))
+    if request.method == 'POST':
+        db = SessionLocal()
+        try:
+            title = request.form.get('title', '').strip()
+            link = request.form.get('link', '').strip()
+            form_class = request.form.get('form', '').strip()
+            subject = request.form.get('subject', '').strip()
+
+            if not title or not link or not form_class or not subject:
+                flash("All fields are required", "danger")
+                return redirect(url_for('admin_dashboard'))
+
+            new_video = Video(
+                title=title,
+                link=link,
+                form=form_class,
+                subject=subject
+            )
+            db.add(new_video)
+            db.commit()
+            flash("Video added successfully!", "success")
+        finally:
+            db.close()
+
+    return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/video/edit/<int:video_id>", methods=["GET", "POST"])
 @role_required("admin")
