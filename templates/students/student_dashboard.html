@@ -14,8 +14,6 @@
       display: flex;
       flex-direction: column;
     }
-
-    /* Sidebar */
     .sidebar {
       background-color: #1f2937;
       color: #f3f4f6;
@@ -27,10 +25,6 @@
       font-weight: bold;
       margin-top: 0.5rem;
     }
-    .sidebar p {
-      margin: 0.25rem 0;
-      color: #d1d5db;
-    }
     .sidebar a {
       color: #60a5fa;
       text-decoration: none;
@@ -40,8 +34,6 @@
       color: #3b82f6;
       text-decoration: underline;
     }
-
-    /* Top Bar */
     .top-bar {
       background-color: #ffffff;
       padding: 0.5rem 1.5rem;
@@ -51,11 +43,6 @@
       align-items: center;
       margin-bottom: 1.5rem;
       border-radius: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .top-bar .stats {
-      display: flex;
-      gap: 1rem;
       flex-wrap: wrap;
     }
     .top-bar .stat {
@@ -70,8 +57,6 @@
     .top-bar .stat:hover {
       transform: translateY(-2px);
     }
-
-    /* Section titles */
     .section-title {
       font-weight: 600;
       font-size: 1.25rem;
@@ -81,8 +66,6 @@
       border-bottom: 2px solid #3b82f6;
       padding-bottom: 0.25rem;
     }
-
-    /* Cards */
     .card {
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -93,31 +76,9 @@
       transform: translateY(-3px);
       box-shadow: 0 6px 20px rgba(0,0,0,0.15);
     }
-    .card-body h5, .card-body h6 {
-      font-weight: 600;
-      color: #1f2937;
+    .ratio iframe {
+      border-radius: 10px;
     }
-    .card-body p {
-      color: #4b5563;
-    }
-
-    /* Buttons */
-    .btn-primary {
-      background-color: #3b82f6;
-      border: none;
-    }
-    .btn-primary:hover {
-      background-color: #2563eb;
-    }
-    .btn-success {
-      background-color: #10b981;
-      border: none;
-    }
-    .btn-success:hover {
-      background-color: #059669;
-    }
-
-    /* Footer */
     footer {
       background-color: #1f2937;
       color: #f3f4f6;
@@ -149,9 +110,9 @@
     <!-- Main Content -->
     <main class="col px-4 py-3">
 
-      <!-- Top Bar -->
+      <!-- Stats -->
       <div class="top-bar">
-        <div class="stats">
+        <div class="d-flex gap-2 flex-wrap">
           <div class="stat">
             <h5>{{ live_classes|length }}</h5>
             <small>Live Classes</small>
@@ -179,7 +140,6 @@
               <h5 class="card-title">{{ cls.title }}</h5>
               <p><strong>Subject:</strong> {{ cls.subject or "N/A" }}</p>
               <p><strong>Time:</strong> {{ cls.time or "TBA" }}</p>
-              <p><strong>Form:</strong> {{ cls.form or "All" }}</p>
               <a href="{{ cls.link }}" target="_blank" class="btn btn-primary btn-sm">
                 <i class="bi bi-camera-video"></i> Join Class
               </a>
@@ -199,9 +159,21 @@
           <div class="card h-100">
             <div class="card-body">
               <h5 class="card-title">{{ mat.title }}</h5>
-              <a href="{{ mat.link }}" target="_blank" class="btn btn-success btn-sm">
-                <i class="bi bi-file-earmark-arrow-down"></i> View / Download
-              </a>
+
+              {% if 'drive.google.com' in mat.link %}
+                {% set file_id = mat.link.split('/d/')[1].split('/')[0] if '/d/' in mat.link else '' %}
+                {% set embed_link = 'https://drive.google.com/file/d/' + file_id + '/preview' %}
+                <div class="ratio ratio-16x9 mb-2">
+                  <iframe src="{{ embed_link }}" allowfullscreen></iframe>
+                </div>
+                <a href="https://drive.google.com/uc?export=download&id={{ file_id }}" target="_blank" class="btn btn-success btn-sm">
+                  <i class="bi bi-download"></i> Download
+                </a>
+              {% else %}
+                <a href="{{ mat.link }}" target="_blank" class="btn btn-success btn-sm">
+                  <i class="bi bi-file-earmark-arrow-down"></i> View / Download
+                </a>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -217,7 +189,12 @@
         <div class="col">
           <div class="card h-100">
             <div class="ratio ratio-16x9">
-              <iframe src="{{ video.link }}" title="{{ video.title }}" allowfullscreen></iframe>
+              {% if 'drive.google.com' in video.link %}
+                {% set vid_id = video.link.split('/d/')[1].split('/')[0] if '/d/' in video.link else '' %}
+                <iframe src="https://drive.google.com/file/d/{{ vid_id }}/preview" allowfullscreen></iframe>
+              {% else %}
+                <iframe src="{{ video.link }}" allowfullscreen></iframe>
+              {% endif %}
             </div>
             <div class="card-body">
               <h6 class="card-title">{{ video.title }}</h6>
@@ -233,7 +210,6 @@
   </div>
 </div>
 
-<!-- Footer -->
 <footer>
   &copy; {{ current_year }} InterSurf Learning Portal. All rights reserved.
 </footer>
