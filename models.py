@@ -73,7 +73,7 @@ class RevisionMaterial(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False)
-    link = Column(String(500), nullable=False)
+    subject = Column(String(100), nullable=False)
     form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
 
 

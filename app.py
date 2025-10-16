@@ -468,6 +468,11 @@ def add_video():
                 flash("All fields are required", "danger")
                 return redirect(url_for('admin_dashboard'))
 
+            # ✅ Convert Google Drive links to embeddable direct links
+            if "drive.google.com/file/d/" in link:
+                file_id = link.split("/d/")[1].split("/")[0]
+                link = f"https://drive.google.com/uc?export=download&id={file_id}"
+
             new_video = Video(
                 title=title,
                 link=link,
@@ -481,6 +486,7 @@ def add_video():
             db.close()
 
     return redirect(url_for('admin_dashboard'))
+
 
 @app.route("/admin/video/edit/<int:video_id>", methods=["GET", "POST"])
 @role_required("admin")
