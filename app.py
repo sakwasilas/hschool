@@ -44,41 +44,43 @@ def home():
 # =========================
 # Login
 # =========================
+# =========================
+# Login
+# =========================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
 
         db = SessionLocal()
-        user = db.query(User).filter_by(username=username).first()
+        try:
+            # Fetch user by username
+            user = db.query(User).filter_by(username=username).first()
 
-        # Plain text password check (since no hashing)
-        if user and user.password == password:
-            # Store user info before closing DB
-            role = user.role
-            user_id = user.id
+            if user and user.password == password:  # Plain text check
+                # Set session info
+                session["user_id"] = user.id
+                session["role"] = user.role
 
-            # Close DB before using session
-            db.close()
-
-            # Set session data
-            session["user_id"] = user_id
-            session["role"] = role
-
-            # Redirect based on role
-            if role == "admin":
-                return redirect(url_for("admin_dashboard"))
-            elif role == "teacher":
-                return redirect(url_for("teacher_dashboard"))
-            elif role == "student":
-                return redirect(url_for("complete_profile"))
+                # Redirect based on role
+                if user.role == "admin":
+                    return redirect(url_for("admin_dashboard"))
+                elif user.role == "teacher":
+                    return redirect(url_for("teacher_dashboard"))
+                elif user.role == "student":
+                    # Check if student already has a profile
+                    profile = db.query(CompleteProfile).filter_by(user_id=user.id).first()
+                    if profile:
+                        return redirect(url_for("student_dashboard"))
+                    else:
+                        return redirect(url_for("complete_profile"))
+                else:
+                    return "Role not recognized", 403
             else:
-                return "Role not recognized", 403
-
-        else:
+                flash("Invalid credentials", "danger")
+        finally:
             db.close()
-            flash("Invalid credentials", "danger")
 
     return render_template("login.html")
 
