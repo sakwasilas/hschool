@@ -386,9 +386,6 @@ def delete_live_class(class_id):
     flash("Live class deleted!", "success")
     return redirect(url_for("admin_dashboard"))
 
-# =========================
-# Admin - Upload Material
-# =========================
 @app.route('/admin/material/add', methods=['GET', 'POST'])
 @role_required("admin")
 def add_material():
@@ -398,30 +395,47 @@ def add_material():
             title = request.form.get('title', '').strip()
             subject = request.form.get('subject', '').strip()
             form_class = request.form.get('form', '').strip()
+            link = request.form.get('link', '').strip()
             file = request.files.get('file')
 
-            if not title or not subject or not form_class or not file:
+            if not title or not subject or not form_class:
                 flash("All fields are required", "danger")
                 return redirect(url_for('admin_dashboard'))
 
-            if file and allowed_file(file.filename):
+            # Case 1: Google Drive link
+            if link:
+                if "drive.google.com/file/d/" in link:
+                    file_id = link.split("/d/")[1].split("/")[0]
+                    link = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+            # Case 2: File upload
+            elif file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(file_path)
                 link = url_for('static', filename=f'materials/{filename}')
 
-                # Save to database
-                new_material = RevisionMaterial(title=title, subject=subject, form=form_class, link=link)
-                db.add(new_material)
-                db.commit()
-
-                flash("Material uploaded successfully!", "success")
             else:
-                flash("Invalid file type", "danger")
+                flash("You must provide either a file or a Google Drive link.", "danger")
+                return redirect(url_for('admin_dashboard'))
+
+            # Save material
+            new_material = RevisionMaterial(
+                title=title,
+                subject=subject,
+                form=form_class,
+                link=link
+            )
+            db.add(new_material)
+            db.commit()
+            flash("Material added successfully!", "success")
+
         finally:
             db.close()
 
     return redirect(url_for('admin_dashboard'))
+
+
 
 @app.route("/admin/material/edit/<int:material_id>", methods=["GET", "POST"])
 @role_required("admin")
