@@ -450,9 +450,10 @@ def delete_material(material_id):
     flash("Material deleted!", "success")
     return redirect(url_for("admin_dashboard"))
 
+# ========================= 
+# Admin CRUD - Videos
 # =========================
-# Admin - Add Video
-# =========================
+
 @app.route('/admin/video/add', methods=['GET', 'POST'])
 @role_required("admin")
 def add_video():
@@ -468,10 +469,10 @@ def add_video():
                 flash("All fields are required", "danger")
                 return redirect(url_for('admin_dashboard'))
 
-            # ✅ Convert Google Drive links to embeddable direct links
+            # Convert Google Drive links to embeddable preview links
             if "drive.google.com/file/d/" in link:
                 file_id = link.split("/d/")[1].split("/")[0]
-                link = f"https://drive.google.com/uc?export=download&id={file_id}"
+                link = f"https://drive.google.com/file/d/{file_id}/preview"
 
             new_video = Video(
                 title=title,
