@@ -75,6 +75,7 @@ class RevisionMaterial(Base):
     title = Column(String(200), nullable=False)
     subject = Column(String(100), nullable=False)
     form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
+    subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)
 
 
 # =========================
