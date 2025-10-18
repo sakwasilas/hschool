@@ -1,249 +1,578 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin Dashboard</title>
 
-  <!-- Bootstrap & Icons -->
+  <!-- Bootstrap & icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
-    body {
-      background-color: #111827;
-      color: #f3f4f6;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
+    :root{
+      --bg: #0f1724;            /* page background */
+      --panel: #111827;         /* panel / sidebar */
+      --card: #0f1724;          /* card bg */
+      --muted: #9ca3af;
+      --accent: #3b82f6;        /* your blue accent */
+      --glass: rgba(255,255,255,0.03);
     }
 
-    /* Sidebar */
+    html,body{
+      height:100%;
+      background: var(--bg);
+      color: #e6eef8;
+      font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial;
+      margin:0;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* LAYOUT
+       - sidebar is slim on desktop (220px)
+       - overlay on mobile (hidden by default)
+    */
+    .app {
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* SIDEBAR */
     .sidebar {
-      background-color: #1f2937;
-      min-height: 100vh;
-      padding: 2rem 1rem;
-      color: #f3f4f6;
-    }
-    .sidebar h5 {
-      color: #3b82f6;
-      font-weight: bold;
-    }
-    .sidebar a {
-      color: #9ca3af;
-      text-decoration: none;
-      display: block;
-      margin: 0.5rem 0;
-      padding: 0.5rem 0.75rem;
-      border-radius: 8px;
-      transition: background 0.2s, color 0.2s;
-    }
-    .sidebar a:hover {
-      color: #3b82f6;
-      background-color: #374151;
+      width: 220px;
+      background: linear-gradient(180deg,var(--panel), #0b1220);
+      padding: 22px 18px;
+      box-shadow: 0 6px 22px rgba(2,6,23,0.6);
+      flex-shrink: 0;
+      transition: transform .28s ease, box-shadow .28s ease;
     }
 
-    /* Section title */
+    .sidebar .logo {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom: 18px;
+    }
+    .logo img{ width:56px; height:56px; border-radius:12px; object-fit:cover; }
+    .logo h5 {
+      margin:0;
+      color: var(--accent);
+      font-size:1.05rem;
+      letter-spacing:0.2px;
+    }
+    .sidebar hr { border-color: rgba(255,255,255,0.04); }
+
+    .navlink {
+      color: #cbd5e1;
+      padding: 10px 8px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      border-radius:8px;
+      font-weight:500;
+      text-decoration:none;
+    }
+    .navlink:hover{ background: rgba(255,255,255,0.03); color:var(--accent); }
+
+    /* MAIN */
+    .main {
+      flex:1 1 auto;
+      padding: 22px;
+      transition: margin-left .28s ease;
+      min-width:0;
+    }
+
+    /* TOP STATS BAR */
+    .top-bar {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .stat {
+      background: linear-gradient(135deg,var(--accent), #60a5fa);
+      color:white;
+      padding:8px 12px;
+      border-radius:10px;
+      min-width:110px;
+      text-align:center;
+      box-shadow: 0 6px 18px rgba(11,65,164,0.08);
+      font-weight:600;
+    }
+
+    h2.page-title { text-align:center; color:#e6eef8; margin:6px 0 18px; font-weight:600; }
+
+    /* SECTION TITLE */
     .section-title {
-      font-weight: 600;
-      font-size: 1.25rem;
-      margin-top: 2rem;
-      margin-bottom: 1rem;
-      color: #93c5fd;
-      border-bottom: 2px solid #3b82f6;
-      padding-bottom: 0.25rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-top:18px;
+      margin-bottom:12px;
+      padding-bottom:6px;
+      border-bottom: 2px solid rgba(59,130,246,0.12);
+      color: #cfe6ff;
+      font-weight:600;
+      font-size:1.05rem;
     }
 
-    /* Cards */
+    /* CARDS */
     .card {
-      border: none;
-      border-radius: 12px;
-      background-color: #1e293b;
-      color: #f3f4f6;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      transition: transform 0.2s, box-shadow 0.2s;
+      background:var(--card);
+      border: 1px solid rgba(255,255,255,0.03);
+      border-radius:12px;
+      color: #e6eef8;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.6);
     }
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    .card .card-body { padding:16px; }
+    .card .card-title { margin-bottom:8px; font-weight:700; color:#dff1ff }
+    .card .card-text { color:var(--muted); margin-bottom:8px; }
+
+    .btn-primary { background: linear-gradient(135deg,var(--accent), #60a5fa); border:none; box-shadow: 0 6px 18px rgba(59,130,246,0.08); }
+    .btn-success { background: linear-gradient(135deg,#10b981,#34d399); border:none; }
+    .btn-warning { background: linear-gradient(135deg,#f59e0b,#f97316); border:none; color:#0b0910; }
+    .btn-danger { background: linear-gradient(135deg,#ef4444,#f87171); border:none; }
+
+    /* EMBED RATIO */
+    .ratio iframe { border-radius:8px; border: none; }
+
+    /* FOOTER */
+    footer.site-footer {
+      margin-top:26px;
+      padding:14px;
+      text-align:center;
+      color:var(--muted);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border-top: 1px solid rgba(255,255,255,0.02);
+      border-radius:8px;
     }
 
-    .btn {
-      border: none;
+    /* MOBILE: overlay sidebar */
+    .mobile-overlay {
+      display:none;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #3b82f6, #60a5fa);
-    }
-    .btn-success {
-      background: linear-gradient(135deg, #10b981, #34d399);
-    }
-    .btn-warning {
-      background: linear-gradient(135deg, #facc15, #fbbf24);
-      color: #000;
-    }
-    .btn-danger {
-      background: linear-gradient(135deg, #ef4444, #f87171);
-    }
-
-    .ratio iframe {
-      border-radius: 8px;
-    }
-
-    footer {
-      background-color: #1f2937;
-      color: #9ca3af;
-      text-align: center;
-      padding: 1rem;
-      margin-top: auto;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
+    @media (max-width: 992px) {
       .sidebar {
-        text-align: center;
-        padding: 1rem;
-        min-height: auto;
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        transform: translateX(-110%);
+        z-index: 1100;
       }
-      .sidebar a {
-        display: inline-block;
-        margin: 0.3rem;
+      .sidebar.open {
+        transform: translateX(0);
       }
+
+      .mobile-overlay {
+        display:block;
+        position: fixed;
+        inset: 0;
+        background: rgba(2,6,23,0.55);
+        z-index: 1050;
+        opacity:0;
+        transition: opacity .18s ease;
+        pointer-events:none;
+      }
+      .mobile-overlay.show {
+        opacity:1;
+        pointer-events:auto;
+      }
+
+      .main { padding:14px; }
+
+      /* slim top area with hamburger */
+      .top-actions {
+        display:flex;
+        align-items:center;
+        gap:8px;
+      }
+
+      /* reduce stats size */
+      .stat { min-width:90px; padding:6px 10px; font-size:0.95rem; }
     }
+
+    /* small tweaks */
+    .muted { color:var(--muted); }
+    .search-input { background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03); color:#e6eef8; }
+    .form-control:focus { box-shadow:none; border-color: rgba(59,130,246,0.4); }
+    .btn-sm { padding:.35rem .6rem; font-size:.85rem; }
+
+    /* make action buttons wrap nicely */
+    .action-group { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+
   </style>
 </head>
 <body>
 
-<div class="container-fluid">
-  <div class="row flex-nowrap">
+<div class="app">
 
-    <!-- Sidebar -->
-    <nav class="col-12 col-md-3 col-lg-2 sidebar sticky-top">
-      <div class="text-center mb-4">
-        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" class="rounded-circle mb-2" width="80" height="80">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="logo">
+      <div>
         <h5>Admin Dashboard</h5>
+        <div class="muted" style="font-size:.82rem">Manage classes & materials</div>
       </div>
-      <hr style="border-color: rgba(255,255,255,0.2);">
-      <a href="{{ url_for('admin_dashboard') }}"><i class="bi bi-house"></i> Home</a>
-      <a href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a>
+    </div>
+
+    <hr>
+
+    <nav class="nav flex-column">
+      <a class="navlink" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-house"></i><span> Home</span></a>
+      <a class="navlink" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i><span> Logout</span></a>
     </nav>
+  </aside>
 
-    <!-- Main Content -->
-    <main class="col px-4 py-3">
+  <!-- mobile overlay (for overlay closing) -->
+  <div id="mobileOverlay" class="mobile-overlay"></div>
 
-      <!-- Live Classes Section -->
-      <div class="section-title">
-        📡 Live Classes
-        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addLiveClassModal">
-          <i class="bi bi-plus-lg"></i> Add
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- top actions + hamburger (mobile) -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <button id="hamburger" class="btn btn-sm" style="background:transparent; border:1px solid rgba(255,255,255,0.03); color:var(--accent); display:none;">
+          <i class="bi bi-list"></i>
         </button>
-      </div>
-
-      <input type="text" class="form-control mb-3 bg-dark text-light border-secondary" id="searchLiveClasses" placeholder="Search Live Classes...">
-
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="liveClassesContainer">
-        {% for cls in live_classes %}
-        <div class="col card-item">
-          <div class="card p-3">
-            <h5>{{ cls.title }}</h5>
-            <p><strong>Time:</strong> {{ cls.time }}</p>
-            <p><strong>Form:</strong> {{ cls.form }}</p>
-            <p><strong>Subject:</strong> {{ cls.subject }}</p>
-            <a href="{{ cls.link }}" target="_blank" class="btn btn-primary btn-sm">Join</a>
-            <a href="{{ url_for('edit_live_class', class_id=cls.id) }}" class="btn btn-warning btn-sm">Edit</a>
-            <a href="{{ url_for('delete_live_class', class_id=cls.id) }}" class="btn btn-danger btn-sm">Delete</a>
-          </div>
+        <div class="d-none d-lg-block">
+          <!-- desktop small title area left empty for balance -->
         </div>
-        {% endfor %}
       </div>
 
-      <!-- Revision Materials Section -->
-      <div class="section-title">
-        📘 Revision Materials
-        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
-          <i class="bi bi-plus-lg"></i> Add
-        </button>
-      </div>
-
-      <input type="text" class="form-control mb-3 bg-dark text-light border-secondary" id="searchMaterials" placeholder="Search Materials...">
-
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="materialsContainer">
-        {% for mat in revision_materials %}
-        <div class="col card-item">
-          <div class="card p-3">
-            <h5>{{ mat.title }}</h5>
-            <p><strong>Subject:</strong> {{ mat.subject }}</p>
-            <p><strong>Form:</strong> {{ mat.form }}</p>
-            <a href="{{ mat.link }}" target="_blank" class="btn btn-success btn-sm">View</a>
-            <a href="{{ url_for('edit_material', material_id=mat.id) }}" class="btn btn-warning btn-sm">Edit</a>
-            <a href="{{ url_for('delete_material', material_id=mat.id) }}" class="btn btn-danger btn-sm">Delete</a>
-          </div>
+      <div class="top-actions">
+        <div class="top-bar">
+          <div class="stat"><div>{{ live_classes|length }}</div><small style="display:block;font-weight:600">Live Classes</small></div>
+          <div class="stat" style="background: linear-gradient(135deg,#10b981,#34d399)"><div>{{ revision_materials|length }}</div><small style="display:block;font-weight:600">Materials</small></div>
+          <div class="stat" style="background: linear-gradient(135deg,#f97316,#fb923c)"><div>{{ videos|length }}</div><small style="display:block;font-weight:600">Videos</small></div>
         </div>
-        {% endfor %}
       </div>
+    </div>
 
-      <!-- Videos Section -->
-      <div class="section-title">
-        🎥 Videos
-        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#addVideoModal">
-          <i class="bi bi-plus-lg"></i> Add
-        </button>
+    <h2 class="page-title">Student Content Management</h2>
+
+    <!-- Live Classes -->
+    <div class="section-title">
+      <div>📡 Live Classes</div>
+      <div>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addLiveClassModal"><i class="bi bi-plus-lg"></i> Add</button>
       </div>
+    </div>
 
-      <input type="text" class="form-control mb-3 bg-dark text-light border-secondary" id="searchVideos" placeholder="Search Videos...">
+    <input id="searchLiveClasses" type="text" class="form-control mb-3 search-input" placeholder="Search Live Classes...">
 
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3" id="videosContainer">
-        {% for video in videos %}
-        <div class="col card-item">
-          <div class="card">
-            <div class="ratio ratio-16x9">
-              <iframe src="{{ video.link }}" title="{{ video.title }}" allowfullscreen></iframe>
+    <div class="row g-3" id="liveClassesContainer">
+      {% for cls in live_classes %}
+      <div class="col-12 col-md-6 col-lg-4 card-item">
+        <div class="card p-3">
+          <div class="card-body">
+            <h5 class="card-title">{{ cls.title }}</h5>
+            <p class="card-text"><strong>Time:</strong> {{ cls.time }}</p>
+            <p class="card-text"><strong>Form:</strong> {{ cls.form }}</p>
+            <p class="card-text"><strong>Subject:</strong> {{ cls.subject }}</p>
+
+            <div class="action-group">
+              <a href="{{ cls.link }}" target="_blank" class="btn btn-primary btn-sm"><i class="bi bi-camera-video"></i> Join</a>
+              <a href="{{ url_for('edit_live_class', class_id=cls.id) }}" class="btn btn-warning btn-sm">Edit</a>
+              <a href="{{ url_for('delete_live_class', class_id=cls.id) }}" class="btn btn-danger btn-sm">Delete</a>
             </div>
-            <div class="card-body">
-              <h6>{{ video.title }}</h6>
-              <p><strong>Subject:</strong> {{ video.subject }}</p>
-              <p><strong>Form:</strong> {{ video.form }}</p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Revision Materials -->
+    <div class="section-title">
+      <div>📘 Revision Materials</div>
+      <div>
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addMaterialModal"><i class="bi bi-plus-lg"></i> Add</button>
+      </div>
+    </div>
+
+    <input id="searchMaterials" type="text" class="form-control mb-3 search-input" placeholder="Search Materials...">
+
+    <div class="row g-3" id="materialsContainer">
+      {% for mat in revision_materials %}
+      <div class="col-12 col-md-6 col-lg-4 card-item">
+        <div class="card p-3">
+          <div class="card-body">
+            <h5 class="card-title">{{ mat.title }}</h5>
+            <p class="card-text"><strong>Subject:</strong> {{ mat.subject }}</p>
+            <p class="card-text"><strong>Form:</strong> {{ mat.form }}</p>
+
+            {% if 'drive.google.com' in mat.link %}
+              {% set file_id = mat.link.split('/d/')[1].split('/')[0] if '/d/' in mat.link else '' %}
+              <div class="ratio ratio-16x9 mb-2">
+                <iframe src="https://drive.google.com/file/d/{{ file_id }}/preview?rm=embedded&disablekb=1&hl=en&embedded=true"
+                        sandbox="allow-scripts allow-same-origin"
+                        allowfullscreen
+                        allow="autoplay"></iframe>
+              </div>
+            {% else %}
+              <a href="{{ mat.link }}" target="_blank" class="btn btn-success btn-sm">View</a>
+            {% endif %}
+
+            <div class="action-group">
+              <a href="{{ url_for('edit_material', material_id=mat.id) }}" class="btn btn-warning btn-sm">Edit</a>
+              <a href="{{ url_for('delete_material', material_id=mat.id) }}" class="btn btn-danger btn-sm">Delete</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Videos -->
+    <div class="section-title">
+      <div>🎥 Videos</div>
+      <div>
+        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#addVideoModal"><i class="bi bi-plus-lg"></i> Add</button>
+      </div>
+    </div>
+
+    <input id="searchVideos" type="text" class="form-control mb-3 search-input" placeholder="Search Videos...">
+
+    <div class="row g-3" id="videosContainer">
+      {% for video in videos %}
+      <div class="col-12 col-md-6 col-lg-4 card-item">
+        <div class="card">
+          <div class="ratio ratio-16x9">
+            {% if 'drive.google.com' in video.link %}
+              {% set vid_id = video.link.split('/d/')[1].split('/')[0] if '/d/' in video.link else '' %}
+              <iframe src="https://drive.google.com/file/d/{{ vid_id }}/preview?rm=embedded&disablekb=1&hl=en&embedded=true"
+                      sandbox="allow-scripts allow-same-origin"
+                      allowfullscreen
+                      allow="autoplay"></iframe>
+            {% else %}
+              <iframe src="{{ video.link }}" title="{{ video.title }}" allowfullscreen></iframe>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <h6 class="card-title">{{ video.title }}</h6>
+            <p class="card-text"><strong>Subject:</strong> {{ video.subject }}</p>
+            <p class="card-text"><strong>Form:</strong> {{ video.form }}</p>
+            <div class="action-group">
               <a href="{{ url_for('edit_video', video_id=video.id) }}" class="btn btn-warning btn-sm">Edit</a>
               <a href="{{ url_for('delete_video', video_id=video.id) }}" class="btn btn-danger btn-sm">Delete</a>
             </div>
           </div>
         </div>
-        {% endfor %}
       </div>
+      {% endfor %}
+    </div>
 
-    </main>
+    <footer class="site-footer">
+      &copy; {{ current_year }} All rights reserved.
+    </footer>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Modals (unchanged) -->
+
+<!-- Add Live Class Modal -->
+<div class="modal fade" id="addLiveClassModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="{{ url_for('add_live_class') }}" method="POST" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Live Class</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" name="title" required></div>
+        <div class="mb-3"><label class="form-label">Link</label><input type="url" class="form-control" name="link" required></div>
+        <div class="mb-3"><label class="form-label">Time</label><input type="text" class="form-control" name="time"></div>
+        <div class="mb-3">
+          <label class="form-label">Form / Class</label>
+          <select class="form-select" name="form">
+            <option value="Form 1">Form 1</option>
+            <option value="Form 2">Form 2</option>
+            <option value="Form 3">Form 3</option>
+            <option value="Form 4">Form 4</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label">Subject</label><input type="text" class="form-control" name="subject"></div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="btn btn-primary">Add Class</button></div>
+    </form>
   </div>
 </div>
 
-<footer>
-  &copy; {{ current_year }} Admin Dashboard. All rights reserved.
-</footer>
+<!-- Add Material Modal -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="{{ url_for('add_material') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Material</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
 
-<!-- Bootstrap -->
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" name="title" required></div>
+        <div class="mb-3"><label class="form-label">Subject</label><input type="text" class="form-control" name="subject" required></div>
+        <div class="mb-3">
+          <label class="form-label">Class / Form</label>
+          <select class="form-select" name="form" required>
+            <option value="Form 1">Form 1</option>
+            <option value="Form 2">Form 2</option>
+            <option value="Form 3">Form 3</option>
+            <option value="Form 4">Form 4</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+
+        <hr>
+        <div class="mb-3">
+          <label class="form-label">Upload Option</label>
+          <select class="form-select" id="uploadOption" onchange="toggleUploadField()" required>
+            <option value="file">Upload File</option>
+            <option value="link">Google Drive Link</option>
+          </select>
+        </div>
+
+        <div class="mb-3" id="fileUploadField">
+          <label class="form-label">Select File</label>
+          <input type="file" class="form-control" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx">
+        </div>
+
+        <div class="mb-3 d-none" id="linkUploadField">
+          <label class="form-label">Google Drive Link</label>
+          <input type="url" class="form-control" name="link" placeholder="Paste Google Drive link here">
+        </div>
+      </div>
+
+      <div class="modal-footer"><button type="submit" class="btn btn-success">Add Material</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Video Modal -->
+<div class="modal fade" id="addVideoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="{{ url_for('add_video') }}" method="POST" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Video</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" name="title" required></div>
+        <div class="mb-3"><label class="form-label">Video Link</label><input type="url" class="form-control" name="link" required></div>
+        <div class="mb-3"><label class="form-label">Subject</label><input type="text" class="form-control" name="subject" required></div>
+        <div class="mb-3">
+          <label class="form-label">Class / Form</label>
+          <select class="form-select" name="form" required>
+            <option value="Form 1">Form 1</option>
+            <option value="Form 2">Form 2</option>
+            <option value="Form 3">Form 3</option>
+            <option value="Form 4">Form 4</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="submit" class="btn btn-warning">Add Video</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Search Function -->
 <script>
+  // SIDEBAR (overlay) behavior
+  const sidebar = document.getElementById('sidebar');
+  const hamburger = document.getElementById('hamburger');
+  const mobileOverlay = document.getElementById('mobileOverlay');
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    mobileOverlay.classList.add('show');
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    mobileOverlay.classList.remove('show');
+  }
+
+  // Show hamburger only on mobile widths
+  function updateHamburgerVisibility(){
+    if(window.innerWidth <= 992){
+      hamburger.style.display = 'inline-block';
+    } else {
+      hamburger.style.display = 'none';
+      // ensure closed on desktop
+      closeSidebar();
+    }
+  }
+  updateHamburgerVisibility();
+  window.addEventListener('resize', updateHamburgerVisibility);
+
+  // toggle when hamburger clicked
+  hamburger.addEventListener('click', () => {
+    if(sidebar.classList.contains('open')){
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  // close when overlay clicked
+  mobileOverlay.addEventListener('click', closeSidebar);
+
+  // Auto-close sidebar when any nav link or button inside sidebar is clicked (mobile-friendly)
+  sidebar.querySelectorAll('a').forEach(el => {
+    el.addEventListener('click', () => {
+      if(window.innerWidth <= 992) closeSidebar();
+    });
+  });
+
+  // Upload field toggle (modal)
+  function toggleUploadField() {
+    const option = document.getElementById('uploadOption').value;
+    document.getElementById('fileUploadField').classList.toggle('d-none', option !== 'file');
+    document.getElementById('linkUploadField').classList.toggle('d-none', option !== 'link');
+  }
+
+  // Search setup
   function setupSearch(inputId, containerId) {
     const input = document.getElementById(inputId);
     const container = document.getElementById(containerId);
+    if(!input || !container) return;
     const cards = container.querySelectorAll('.card-item');
     input.addEventListener('input', () => {
-      const query = input.value.toLowerCase();
+      const q = input.value.trim().toLowerCase();
       cards.forEach(card => {
-        const title = card.querySelector('h5, h6').innerText.toLowerCase();
-        card.style.display = title.includes(query) ? '' : 'none';
+        const titleEl = card.querySelector('.card-title') || card.querySelector('h5,h6');
+        const title = titleEl ? titleEl.innerText.toLowerCase() : '';
+        card.style.display = title.includes(q) ? '' : 'none';
       });
     });
   }
 
-  setupSearch('searchLiveClasses', 'liveClassesContainer');
-  setupSearch('searchMaterials', 'materialsContainer');
-  setupSearch('searchVideos', 'videosContainer');
+  setupSearch('searchLiveClasses','liveClassesContainer');
+  setupSearch('searchMaterials','materialsContainer');
+  setupSearch('searchVideos','videosContainer');
+
+  // Optional: prevent right-click and quick-downloads on admin if you want extra protection
+  // (uncomment if desired)
+  /*
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.onkeydown = function(e){
+    if(e.ctrlKey && ['s','u','c','x','a','p'].includes(e.key.toLowerCase())) e.preventDefault();
+    if (['F12','Escape'].includes(e.key)) e.preventDefault();
+  };
+  document.addEventListener('selectstart', e => e.preventDefault());
+  document.addEventListener('copy', e => e.preventDefault());
+  */
+
 </script>
 
 </body>
