@@ -169,9 +169,6 @@ def reset_password(username):
 # =========================
 # Complete Profile
 # =========================
-# =========================
-# Complete Profile
-# =========================
 @app.route('/complete_profile', methods=['GET', 'POST'])
 def complete_profile():
     if 'user_id' not in session:
@@ -324,7 +321,7 @@ def admin_dashboard():
         current_year=current_year
     )
 
-## =========================
+# =========================
 # Admin CRUD - Live Classes
 # =========================
 @app.route("/admin/live_class/add", methods=["POST"])
@@ -529,6 +526,69 @@ def delete_video(video_id):
     db.close()
     flash("Video deleted!", "success")
     return redirect(url_for("admin_dashboard"))
+
+# ========================
+# ADMIN: Manage Students
+# ========================
+@app.route("/admin/manage_students")
+def manage_students():
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    db = SessionLocal()
+
+    # Get search and sort query params
+    search_query = request.args.get("search", "").strip().lower()
+    sort_by = request.args.get("sort", "id")
+    sort_order = request.args.get("order", "asc")
+
+    # Base query
+    students = db.query(CompleteProfile)
+
+    # Apply search filter
+    if search_query:
+        students = students.filter(
+            (func.lower(CompleteProfile.first_name).like(f"%{search_query}%")) |
+            (func.lower(CompleteProfile.last_name).like(f"%{search_query}%")) |
+            (func.lower(CompleteProfile.form).like(f"%{search_query}%")) |
+            (func.lower(CompleteProfile.contact_no).like(f"%{search_query}%"))
+        )
+
+    # Apply sorting
+    sort_column = getattr(CompleteProfile, sort_by, CompleteProfile.id)
+    if sort_order == "desc":
+        sort_column = sort_column.desc()
+
+    students = students.order_by(sort_column).all()
+    db.close()
+
+    return render_template("admin/admin_manage_students.html", students=students, sort_by=sort_by, sort_order=sort_order)
+
+#============manage students activation=========    
+@app.route("/admin/student/<int:student_id>/paid")
+@role_required("admin")
+def mark_paid(student_id):
+    db = SessionLocal()
+    student = db.query(Student).get(student_id)
+    if student:
+        student.is_active = True
+        db.commit()
+        flash(f"{student.first_name} marked as PAID and activated!", "success")
+    db.close()
+    return redirect(url_for("manage_students"))
+
+
+@app.route("/admin/student/<int:student_id>/block")
+@role_required("admin")
+def mark_blocked(student_id):
+    db = SessionLocal()
+    student = db.query(Student).get(student_id)
+    if student:
+        student.is_active = False
+        db.commit()
+        flash(f"{student.first_name} has been BLOCKED!", "danger")
+    db.close()
+    return redirect(url_for("manage_students"))
 
 
 if __name__ == "__main__":

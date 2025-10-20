@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey,Boolean
 from sqlalchemy.orm import relationship
 from connections import Base
 
@@ -41,6 +41,7 @@ class CompleteProfile(Base):
     contact_no = Column(String(20), nullable=False)
     guardian_name = Column(String(100), nullable=False)
     form = Column(String(20), nullable=False)  # Must have a class (Form 1-4)
+    is_active = Column(Boolean, default=False)  # Paid = True, Blocked = False
 
     def __init__(self, user_id, first_name, last_name, contact_no, guardian_name, form, middle_name=None):
         self.user_id = user_id
