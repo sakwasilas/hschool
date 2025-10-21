@@ -67,18 +67,15 @@ class LiveClass(Base):
     subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)
     active = Column(Boolean, default=False)
 
-# =========================
-# RevisionMaterial Model
-# =========================
 class RevisionMaterial(Base):
     __tablename__ = "revision_materials"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False)
-    subject = Column(String(100), nullable=False)
-    form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
-    subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)
-
+    subject = Column(String(100), nullable=True)  # Only define once
+    form = Column(String(20), nullable=True)
+    link = Column(String(255), nullable=True)  # Add this for external links like Google Drive
+    file_path = Column(String(255), nullable=True)  # Optional: for uploaded files
 
 # =========================
 # Video Model
