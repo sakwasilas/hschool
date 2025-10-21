@@ -370,15 +370,18 @@ def edit_live_class(class_id):
     db.close()
     return render_template("edit_live_class.html", cls=cls)
 
-@app.route("/admin/live_class/delete/<int:class_id>")
+@app.route("/admin/live_class/delete/<int:class_id>", methods=["POST"])
 @role_required("admin")
 def delete_live_class(class_id):
     db = SessionLocal()
     cls = db.query(LiveClass).get(class_id)
-    db.delete(cls)
-    db.commit()
+    if cls:
+        db.delete(cls)
+        db.commit()
+        flash("Live class deleted!", "success")
+    else:
+        flash("Class not found.", "danger")
     db.close()
-    flash("Live class deleted!", "success")
     return redirect(url_for("admin_dashboard"))
 
 @app.route('/admin/material/add', methods=['GET', 'POST'])

@@ -86,7 +86,14 @@
                         data-form="{{ cls.form }}" 
                         data-subject="{{ cls.subject }}" 
                         data-bs-toggle="modal" data-bs-target="#editLiveClassModal">Edit</button>
-                <button class="btn btn-sm btn-danger">Delete</button>
+                
+                <!-- DELETE FORM inside the loop -->
+                <form method="POST"
+                      action="{{ url_for('delete_live_class', class_id=cls.id) }}"
+                      style="display:inline;"
+                      onsubmit="return confirm('Are you sure you want to delete this class?');">
+                  <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                </form>
               </td>
             </tr>
             {% endfor %}
@@ -229,24 +236,23 @@
   </div>
 
   <script>
-  document.querySelectorAll('.edit-liveclass-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const classId = btn.dataset.id;
+    document.querySelectorAll('.edit-liveclass-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const classId = btn.dataset.id;
 
-      // Prefill form fields
-      document.getElementById('edit-id').value = classId;
-      document.getElementById('edit-title').value = btn.dataset.title;
-      document.getElementById('edit-link').value = btn.dataset.link;
-      document.getElementById('edit-time').value = btn.dataset.time;
-      document.getElementById('edit-form').value = btn.dataset.form;
-      document.getElementById('edit-subject').value = btn.dataset.subject;
+        // Prefill form fields
+        document.getElementById('edit-id').value = classId;
+        document.getElementById('edit-title').value = btn.dataset.title;
+        document.getElementById('edit-link').value = btn.dataset.link;
+        document.getElementById('edit-time').value = btn.dataset.time;
+        document.getElementById('edit-form').value = btn.dataset.form;
+        document.getElementById('edit-subject').value = btn.dataset.subject;
 
-      // ✅ Set the form action to include the class ID
-      document.getElementById('edit-live-class-form').action = `/admin/live_class/edit/${classId}`;
+        // Set the form action URL dynamically
+        document.getElementById('edit-live-class-form').action = `/admin/live_class/edit/${classId}`;
+      });
     });
-  });
-</script>
-
+  </script>
 
 </body>
 </html>
