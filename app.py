@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash,jsonify    
 from connections import SessionLocal
 from models import User, CompleteProfile, LiveClass, RevisionMaterial, Video
 from datetime import datetime
@@ -44,9 +44,7 @@ def home():
 # =========================
 # Login
 # =========================
-# =========================
-# Login
-# =========================
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -324,7 +322,7 @@ def admin_dashboard():
 # =========================
 # Admin CRUD - Live Classes
 # =========================
-@app.route("/admin/live_class/add", methods=["POST"])
+@app.route("/admin/live_class/add", methods=["POST","GET"])
 @role_required("admin")
 def add_live_class():
     db = SessionLocal()
@@ -564,31 +562,88 @@ def manage_students():
 
     return render_template("admin/admin_manage_students.html", students=students, sort_by=sort_by, sort_order=sort_order)
 
-#============manage students activation=========    
-@app.route("/admin/student/<int:student_id>/paid")
+    # =========================
+# AJAX ENDPOINTS
+# =========================
+
+@app.route("/api/add_item", methods=["POST"])
 @role_required("admin")
-def mark_paid(student_id):
+def add_item():
+    data = request.json
     db = SessionLocal()
-    student = db.query(Student).get(student_id)
-    if student:
-        student.is_active = True
+    try:
+        if data["type"] == "live":
+            new = LiveClass(
+                title=data["title"],
+                link=data["link"],
+                time=data.get("time"),
+                form=data.get("form"),
+                subject=data.get("subject"),
+                active=data.get("active", False)
+            )
+        elif data["type"] == "material":
+            new = RevisionMaterial(
+                title=data["title"],
+                link=data["link"],
+                form=data.get("form"),
+                subject=data.get("subject")
+            )
+        elif data["type"] == "video":
+            new = Video(
+                title=data["title"],
+                link=data["link"],
+                form=data.get("form"),
+                subject=data.get("subject")
+            )
+        db.add(new)
         db.commit()
-        flash(f"{student.first_name} marked as PAID and activated!", "success")
-    db.close()
-    return redirect(url_for("manage_students"))
+        return jsonify({"success": True, "id": new.id})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
 
 
-@app.route("/admin/student/<int:student_id>/block")
+@app.route("/api/update_item/<string:item_type>/<int:item_id>", methods=["PUT"])
 @role_required("admin")
-def mark_blocked(student_id):
+def update_item(item_type, item_id):
+    data = request.json
     db = SessionLocal()
-    student = db.query(Student).get(student_id)
-    if student:
-        student.is_active = False
+    try:
+        model = {"live": LiveClass, "material": RevisionMaterial, "video": Video}.get(item_type)
+        item = db.query(model).get(item_id)
+        if not item:
+            return jsonify({"success": False, "error": "Not found"}), 404
+
+        for k, v in data.items():
+            setattr(item, k, v)
         db.commit()
-        flash(f"{student.first_name} has been BLOCKED!", "danger")
-    db.close()
-    return redirect(url_for("manage_students"))
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+
+@app.route("/api/delete_item/<string:item_type>/<int:item_id>", methods=["DELETE"])
+@role_required("admin")
+def delete_item(item_type, item_id):
+    db = SessionLocal()
+    try:
+        model = {"live": LiveClass, "material": RevisionMaterial, "video": Video}.get(item_type)
+        item = db.query(model).get(item_id)
+        if not item:
+            return jsonify({"success": False, "error": "Not found"}), 404
+        db.delete(item)
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

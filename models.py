@@ -65,6 +65,7 @@ class LiveClass(Base):
     time = Column(String(50), nullable=True)
     form = Column(String(200), nullable=True)  # Optional: specify which form/class can access
     subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)
+    active = Column(Boolean, default=False)
 
 # =========================
 # RevisionMaterial Model
