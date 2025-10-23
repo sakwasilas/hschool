@@ -478,16 +478,20 @@ def edit_material(material_id):
     db.close()
     return render_template("edit_material.html", mat=mat)
 
-@app.route("/admin/material/delete/<int:material_id>")
+@app.route("/admin/material/delete/<int:material_id>", methods=["POST"])
 @role_required("admin")
 def delete_material(material_id):
     db = SessionLocal()
     mat = db.query(RevisionMaterial).get(material_id)
+    if not mat:
+        flash("Material not found!", "danger")
+        return redirect(url_for("admin_dashboard"))
     db.delete(mat)
     db.commit()
     db.close()
     flash("Material deleted!", "success")
     return redirect(url_for("admin_dashboard"))
+
 
 # ========================= 
 # Admin CRUD - Videos
