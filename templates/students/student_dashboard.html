@@ -51,7 +51,6 @@
       text-decoration: underline;
     }
 
-    /* Sidebar hidden (mobile initial) */
     @media (max-width: 991px) {
       .sidebar {
         transform: translateX(-100%);
@@ -66,7 +65,6 @@
       }
     }
 
-    /* Main content */
     main {
       margin-left: 250px;
       transition: margin-left 0.3s ease-in-out;
@@ -83,7 +81,6 @@
       }
     }
 
-    /* Sidebar Toggle Button */
     .sidebar-toggle {
       background-color: #1f2937;
       color: #fff;
@@ -94,7 +91,6 @@
       margin-bottom: 1rem;
     }
 
-    /* Top bar */
     .top-bar {
       background-color: #ffffff;
       padding: 0.75rem 1.5rem;
@@ -132,7 +128,6 @@
       padding-bottom: 0.25rem;
     }
 
-    /* Cards */
     .card {
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -177,7 +172,6 @@
 
   <!-- Main Content -->
   <main>
-    <!-- Mobile Sidebar Toggle -->
     <div class="d-lg-none text-start">
       <button class="sidebar-toggle" onclick="toggleSidebar()">
         <i class="bi bi-list"></i> Menu
@@ -199,6 +193,19 @@
         <small>Videos</small>
       </div>
     </div>
+
+    <!-- ✅ Account Status Alert -->
+    {% if not student.is_active %}
+      <div class="alert alert-warning text-center fw-semibold mt-3">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>Account Inactive:</strong> Please contact the school admin to make payment and access materials.
+      </div>
+    {% else %}
+      <div class="alert alert-success text-center fw-semibold mt-3">
+        <i class="bi bi-check-circle-fill"></i>
+        <strong>Account Active:</strong> You have full access to all learning materials.
+      </div>
+    {% endif %}
 
     <h2 class="text-center mb-4">Student Dashboard</h2>
 

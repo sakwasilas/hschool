@@ -262,17 +262,36 @@ def student_dashboard():
 
         student_form = profile.form.strip().lower()  # normalize
 
-        # ✅ Fetch Live Classes (matching form or 'all')
+        # =============================
+        # 🔒 Check if student is active
+        # =============================
+        if not profile.is_active:
+            flash("Your account is not active. Please contact admin to make payment.", "warning")
+            # Render dashboard with limited info and message
+            return render_template(
+                "students/student_dashboard.html",
+                student={
+                    "full_name": f"{profile.first_name} {profile.last_name}",
+                    "form": profile.form,
+                    "phone": profile.contact_no,
+                    "guardian_name": profile.guardian_name,
+                    "is_active": profile.is_active
+                },
+                live_classes=[],
+                revision_materials=[],
+                videos=[],
+                current_year=datetime.now().year
+            )
+
+        # ✅ If active, fetch content
         live_classes = db.query(LiveClass).filter(
             func.lower(func.trim(LiveClass.form)).in_([student_form, "all", ""])
         ).all()
 
-        # ✅ Fetch Revision Materials
         revision_materials = db.query(RevisionMaterial).filter(
             func.lower(func.trim(RevisionMaterial.form)).in_([student_form, "all", ""])
         ).all()
 
-        # ✅ Fetch Videos
         videos = db.query(Video).filter(
             func.lower(func.trim(Video.form)).in_([student_form, "all", ""])
         ).all()
@@ -285,6 +304,7 @@ def student_dashboard():
                 "form": profile.form,
                 "phone": profile.contact_no,
                 "guardian_name": profile.guardian_name,
+                "is_active": profile.is_active
             },
             live_classes=live_classes,
             revision_materials=revision_materials,
@@ -294,6 +314,7 @@ def student_dashboard():
 
     finally:
         db.close()
+
 
 
 
@@ -544,15 +565,12 @@ def manage_students():
 
     db = SessionLocal()
 
-    # Get search and sort query params
     search_query = request.args.get("search", "").strip().lower()
     sort_by = request.args.get("sort", "id")
     sort_order = request.args.get("order", "asc")
 
-    # Base query
     students = db.query(CompleteProfile)
 
-    # Apply search filter
     if search_query:
         students = students.filter(
             (func.lower(CompleteProfile.first_name).like(f"%{search_query}%")) |
@@ -561,7 +579,6 @@ def manage_students():
             (func.lower(CompleteProfile.contact_no).like(f"%{search_query}%"))
         )
 
-    # Apply sorting
     sort_column = getattr(CompleteProfile, sort_by, CompleteProfile.id)
     if sort_order == "desc":
         sort_column = sort_column.desc()
@@ -569,7 +586,71 @@ def manage_students():
     students = students.order_by(sort_column).all()
     db.close()
 
-    return render_template("admin/admin_manage_students.html", students=students, sort_by=sort_by, sort_order=sort_order)
+    return render_template(
+        "admin/admin_manage_students.html",
+        students=students,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
+
+@app.route('/mark_paid/<int:student_id>')
+def mark_paid(student_id):
+    db = SessionLocal()
+    try:
+        student = db.query(CompleteProfile).filter_by(id=student_id).first()
+        if not student:
+            flash("Student not found.", "danger")
+            return redirect(url_for("admin_dashboard"))
+
+        # Save names before commit
+        first_name = student.first_name
+        last_name = student.last_name
+
+        student.is_active = True
+        db.commit()
+
+        flash(f"{first_name} {last_name} has been activated (paid).", "success")
+    except Exception as e:
+        db.rollback()
+        flash("Error activating student.", "danger")
+        print(f"Error: {e}")
+    finally:
+        db.close()
+
+    return redirect(url_for("admin_dashboard"))
+
+
+
+# ========================
+# ADMIN: Block Student (Mark Unpaid)
+# ========================
+@app.route('/mark_blocked/<int:student_id>')
+def mark_blocked(student_id):
+    db = SessionLocal()
+    try:
+        student = db.query(CompleteProfile).filter_by(id=student_id).first()
+        if not student:
+            flash("Student not found.", "danger")
+            return redirect(url_for("admin_dashboard"))
+
+        # Save names before commit
+        first_name = student.first_name
+        last_name = student.last_name
+
+        student.is_active = False
+        db.commit()
+
+        flash(f"{first_name} {last_name} has been blocked.", "warning")
+    except Exception as e:
+        db.rollback()
+        flash("Error blocking student. Please try again.", "danger")
+        print(f"Error: {e}")
+    finally:
+        db.close()
+
+    return redirect(url_for("admin_dashboard"))
+
 
     # =========================
 # AJAX ENDPOINTS
