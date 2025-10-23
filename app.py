@@ -4,6 +4,7 @@ from models import User, CompleteProfile, LiveClass, RevisionMaterial, Video
 from datetime import datetime
 from functools import wraps
 from sqlalchemy import func
+import os
 
 #=========================
 # File Upload Config                
@@ -16,8 +17,13 @@ def allowed_file(filename):
 #=========================
 
 
+
 app = Flask(__name__)
 app.secret_key = "silaswanyamarechosilasayangaamukowaivansamuel"
+
+# ✅ Fix KeyError: register upload folder config
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # =========================
 # Role-based Access Decorator
