@@ -99,3 +99,4 @@ class Teacher(Base):
     teacher_name = Column(String(100), nullable=False)
     phone_number = Column(String(20), nullable=False, unique=True)
     subject = Column(String(100), nullable=False)
+    is_approved = Column(Boolean, default=False)  # <--- ADD THIS LINE

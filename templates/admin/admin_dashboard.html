@@ -68,6 +68,7 @@
   <div class="sidebar">
     <h2>ACE Education</h2>
     <a href="#">Dashboard</a>
+    <a href="{{ url_for('manage_teachers') }}">Manage Teachers</a> <!-- ✅ Added -->
     <a href="{{ url_for('manage_students') }}">Manage Students</a>
     <a href="#live">Live Classes</a>
     <a href="#materials">Materials</a>
@@ -78,6 +79,54 @@
   <!-- Content -->
   <div class="content">
     <h3 class="mb-4">Admin Dashboard</h3>
+
+    <!-- ✅ NEW ADMIN OVERVIEW SECTION -->
+    <div class="container mb-4">
+      <h4 class="mb-3">📊 Admin Overview</h4>
+
+      {% if pending_teachers > 0 or pending_students > 0 %}
+      <div class="alert alert-warning" role="alert">
+        ⚠️ There are pending approvals:
+        {% if pending_teachers > 0 %}
+          <strong>{{ pending_teachers }}</strong> teacher(s)
+          <a href="{{ url_for('manage_teachers') }}" class="alert-link">review</a>
+        {% endif %}
+        {% if pending_students > 0 %}
+          <strong>{{ pending_students }}</strong> student(s)
+          <a href="{{ url_for('manage_students') }}" class="alert-link">review</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card text-center border-success">
+            <div class="card-body">
+              <h5 class="card-title">👩‍🏫 Teachers</h5>
+              <p class="card-text fs-4">{{ total_teachers }}</p>
+              <a href="{{ url_for('manage_teachers') }}" class="btn btn-outline-success btn-sm">Manage Teachers</a>
+              {% if pending_teachers > 0 %}
+                <span class="badge bg-warning text-dark mt-2">{{ pending_teachers }} pending</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card text-center border-primary">
+            <div class="card-body">
+              <h5 class="card-title">👨‍🎓 Students</h5>
+              <p class="card-text fs-4">{{ total_students }}</p>
+              <a href="{{ url_for('manage_students') }}" class="btn btn-outline-primary btn-sm">Manage Students</a>
+              {% if pending_students > 0 %}
+                <span class="badge bg-warning text-dark mt-2">{{ pending_students }} pending</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ✅ END ADMIN OVERVIEW SECTION --
 
     <!-- ================= LIVE CLASSES ================= -->
     <div id="live" class="card mb-4">

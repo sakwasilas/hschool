@@ -44,7 +44,6 @@ def role_required(required_role):
 @app.route('/')
 def home():
     return redirect(url_for('login'))
-
 # -----------------------
 # Login
 # -----------------------
@@ -74,27 +73,44 @@ def login():
                     session["user_id"] = user.id
                     session["role"] = user.role
 
+                    # Admin login
                     if user.role == "admin":
                         return redirect(url_for("admin_dashboard"))
+
+                    # Teacher login
                     elif user.role == "teacher":
-                        # If teacher has completed profile?
                         teacher_profile = db.query(Teacher).filter_by(user_id=user.id).first()
-                        if teacher_profile:
-                            return redirect(url_for("teacher_dashboard"))
-                        else:
+
+                        if not teacher_profile:
+                            # Teacher has not yet completed their profile
                             return redirect(url_for("complete_teacher_profile", user_id=user.id))
+
+                        # ✅ Require admin approval before access
+                        if not teacher_profile.is_approved:
+                            flash("Your profile is awaiting admin approval. Please wait before accessing your dashboard.", "warning")
+                            session.clear()
+                            return redirect(url_for("login"))
+
+                        # Approved teachers can access dashboard
+                        return redirect(url_for("teacher_dashboard"))
+
+                    # Student login
                     elif user.role == "student":
                         profile = db.query(CompleteProfile).filter_by(user_id=user.id).first()
+
                         if profile:
                             return redirect(url_for("student_dashboard"))
                         else:
                             return redirect(url_for("complete_profile"))
+
                     else:
                         return "Role not recognized", 403
+
                 else:
                     flash("Invalid credentials", "danger")
             else:
                 flash("Invalid credentials", "danger")
+
         finally:
             db.close()
 
@@ -387,12 +403,29 @@ def admin_dashboard():
         revision_materials = db.query(RevisionMaterial).all()
         videos = db.query(Video).all()
         current_year = datetime.now().year
+
+        # 🧩 Add counts for dashboard cards
+        total_students = db.query(CompleteProfile).count()
+        total_teachers = db.query(Teacher).count()
+
+        # 🧩 Add pending approval counts
+        pending_teachers = db.query(Teacher).filter_by(is_approved=False).count()
+        pending_students = (
+            db.query(CompleteProfile).filter_by(is_approved=False).count()
+            if hasattr(CompleteProfile, 'is_approved')
+            else 0
+        )
+
         return render_template(
             "admin/admin_dashboard.html",
             live_classes=live_classes,
             revision_materials=revision_materials,
             videos=videos,
-            current_year=current_year
+            current_year=current_year,
+            total_students=total_students,
+            total_teachers=total_teachers,
+            pending_teachers=pending_teachers,
+            pending_students=pending_students
         )
     finally:
         db.close()
@@ -925,6 +958,56 @@ def teacher_delete_material(material_id):
     finally:
         db.close()
     return redirect(url_for("teacher_dashboard"))
+
+
+
+# -----------------------
+# Manage teachers (admin)
+# -----------------------
+@app.route("/admin/manage_teachers")
+@role_required("admin")
+def manage_teachers():
+    db = SessionLocal()
+    try:
+        teachers = db.query(Teacher).all()
+        return render_template("admin/admin_manage_teachers.html", teachers=teachers)
+    finally:
+        db.close()
+
+@app.route("/admin/approve_teacher/<int:teacher_id>")
+@role_required("admin")
+def approve_teacher(teacher_id):
+    db = SessionLocal()
+    try:
+        teacher = db.query(Teacher).filter_by(id=teacher_id).first()
+        if not teacher:
+            flash("Teacher not found.", "danger")
+            return redirect(url_for("manage_teachers"))
+
+        teacher.is_approved = True
+        db.commit()
+        flash(f"{teacher.teacher_name} has been approved!", "success")
+    finally:
+        db.close()
+    return redirect(url_for("manage_teachers"))
+
+@app.route("/admin/block_teacher/<int:teacher_id>")
+@role_required("admin")
+def block_teacher(teacher_id):
+    db = SessionLocal()
+    try:
+        teacher = db.query(Teacher).filter_by(id=teacher_id).first()
+        if not teacher:
+            flash("Teacher not found.", "danger")
+            return redirect(url_for("manage_teachers"))
+
+        teacher.is_approved = False
+        db.commit()
+        flash(f"{teacher.teacher_name} has been blocked.", "warning")
+    finally:
+        db.close()
+    return redirect(url_for("manage_teachers"))
+
 
 # -----------------------
 # Run
