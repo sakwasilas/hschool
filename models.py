@@ -88,3 +88,14 @@ class Video(Base):
     link = Column(String(500), nullable=False)
     form = Column(String(20), nullable=True)  # Optional: specify which form/class can access
     subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)
+
+class Teacher(Base):
+    __tablename__ = "teachers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    user = relationship("User")
+
+    teacher_name = Column(String(100), nullable=False)
+    phone_number = Column(String(20), nullable=False, unique=True)
+    subject = Column(String(100), nullable=False)
