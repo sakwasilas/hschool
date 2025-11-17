@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HSchool • Education Style</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="school">
+    <header>
+        <h1>Welcome to HSchool</h1>
+        <p>A Complete Digital Learning System</p>
+
+        <div class="buttons">
+            <a href="/student/login" class="btn blue">Student Login</a>
+            <a href="/admin/login" class="btn green">Admin Login</a>
+        </div>
+    </header>
+
+    <section class="icons">
+        <div class="icon-card">📚 Courses</div>
+        <div class="icon-card">📝 Quizzes</div>
+        <div class="icon-card">📄 Documents</div>
+        <div class="icon-card">🎓 Students</div>
+    </section>
+
+    <footer>HSchool • Built for Learning</footer>
+</body>
+</html>
