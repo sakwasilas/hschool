@@ -26,17 +26,19 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # -----------------------
 # Role-based decorator
 # -----------------------
-def role_required(required_role):
+def role_required(*roles):
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
             if "user_id" not in session or "role" not in session:
                 return redirect(url_for("login"))
-            if session["role"] != required_role:
+            if session["role"] not in roles:
                 return "Access Denied", 403
             return f(*args, **kwargs)
         return wrapped
     return decorator
+
+
 
 # -----------------------
 # Home
@@ -50,6 +52,7 @@ def home():
 # -----------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+ 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
@@ -75,8 +78,9 @@ def login():
                     session["role"] = user.role
 
                     # Admin login
-                    if user.role == "admin":
+                    if user.role in ("admin", "coordinator"):
                         return redirect(url_for("admin_dashboard"))
+
 
                     # Teacher login
                     elif user.role == "teacher":
@@ -372,9 +376,6 @@ def student_dashboard():
     finally:
         db.close()
 
-# -----------------------
-# Teacher Dashboard
-# -----------------------
 @app.route("/teacher_dashboard")
 def teacher_dashboard():
     if 'user_id' not in session or session.get('role') != 'teacher':
@@ -382,34 +383,53 @@ def teacher_dashboard():
 
     db = SessionLocal()
     try:
+        # Get teacher object
         teacher = db.query(Teacher).filter_by(user_id=session['user_id']).first()
-        # provide teacher relevant lists
-        live_classes = db.query(LiveClass).all()
-        revision_materials = db.query(RevisionMaterial).all()
-        # you can filter to teacher's items if you add a column (teacher_id) to models
-        return render_template('teachers/teachers_dashboard.html', teacher=teacher,
-                               live_classes=live_classes, revision_materials=revision_materials)
+        if not teacher:
+            return "Teacher not found", 404
+
+        # Teacher's live classes
+        live_classes = db.query(LiveClass).filter_by(teacher_id=teacher.id).all()
+
+        # Get all forms this teacher teaches
+        teacher_forms = [lc.form for lc in live_classes if lc.form]
+
+        # Revision materials filtered by teacher's forms and subject
+        revision_materials = db.query(RevisionMaterial).filter(
+            RevisionMaterial.form.in_(teacher_forms),
+            RevisionMaterial.subject == teacher.subject
+        ).all()
+
+        return render_template(
+            'teachers/teachers_dashboard.html',
+            teacher=teacher,
+            live_classes=live_classes,
+            revision_materials=revision_materials
+        )
     finally:
         db.close()
 
-# -----------------------
-# Admin Dashboard
-# -----------------------
+
+
 @app.route('/admin')
-@role_required("admin")
+@role_required("admin", "coordinator")
 def admin_dashboard():
     db = SessionLocal()
     try:
+        # Get the logged-in user
+        user = db.query(User).filter_by(id=session["user_id"]).first()
+        role_label = "Coordinator" if user.role == "coordinator" else "Admin"
+
         live_classes = db.query(LiveClass).all()
         revision_materials = db.query(RevisionMaterial).all()
         videos = db.query(Video).all()
         current_year = datetime.now().year
 
-        # 🧩 Add counts for dashboard cards
+        # Counts for dashboard cards
         total_students = db.query(CompleteProfile).count()
         total_teachers = db.query(Teacher).count()
 
-        # 🧩 Add pending approval counts
+        # Pending approvals
         pending_teachers = db.query(Teacher).filter_by(is_approved=False).count()
         pending_students = (
             db.query(CompleteProfile).filter_by(is_approved=False).count()
@@ -419,6 +439,7 @@ def admin_dashboard():
 
         return render_template(
             "admin/admin_dashboard.html",
+            role_label=role_label,
             live_classes=live_classes,
             revision_materials=revision_materials,
             videos=videos,
@@ -435,7 +456,7 @@ def admin_dashboard():
 # Admin CRUD - Live Classes
 # -----------------------
 @app.route("/admin/live_class/add", methods=["POST","GET"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def add_live_class():
     db = SessionLocal()
     try:
@@ -467,7 +488,7 @@ def add_live_class():
 
 
 @app.route("/admin/live_class/edit/<int:class_id>", methods=["GET", "POST"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def edit_live_class(class_id):
     db = SessionLocal()
     try:
@@ -486,7 +507,7 @@ def edit_live_class(class_id):
         db.close()
 
 @app.route("/admin/live_class/delete/<int:class_id>", methods=["POST"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def delete_live_class(class_id):
     db = SessionLocal()
     try:
@@ -505,7 +526,7 @@ def delete_live_class(class_id):
 # Admin CRUD - Materials
 # -----------------------
 @app.route('/admin/material/add', methods=['GET', 'POST'])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def add_material():
     if request.method == 'POST':
         db = SessionLocal()
@@ -552,7 +573,7 @@ def add_material():
     return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/material/edit/<int:material_id>", methods=["GET", "POST"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def edit_material(material_id):
     db = SessionLocal()
     try:
@@ -569,7 +590,7 @@ def edit_material(material_id):
         db.close()
 
 @app.route("/admin/material/delete/<int:material_id>", methods=["POST"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def delete_material(material_id):
     db = SessionLocal()
     try:
@@ -621,7 +642,7 @@ def add_video():
     return redirect(url_for('admin_dashboard'))
 
 @app.route("/admin/video/edit/<int:video_id>", methods=["GET", "POST"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def edit_video(video_id):
     db = SessionLocal()
     try:
@@ -638,7 +659,7 @@ def edit_video(video_id):
         db.close()
 
 @app.route("/admin/video/delete/<int:video_id>")
-@role_required("admin")
+@role_required("admin", "coordinator")
 def delete_video(video_id):
     db = SessionLocal()
     try:
@@ -654,7 +675,7 @@ def delete_video(video_id):
 # Manage students (admin)
 # -----------------------
 @app.route("/admin/manage_students")
-@role_required("admin")
+@role_required("admin", "coordinator")
 def manage_students():
     db = SessionLocal()
     try:
@@ -682,8 +703,64 @@ def manage_students():
     finally:
         db.close()
 
+
+#student upload back materials
+
+@app.route("/student/material/upload", methods=["GET", "POST"])
+@role_required("student")
+def student_upload_material():
+    if request.method == "POST":
+        db = SessionLocal()
+        try:
+            title = request.form.get("title", "").strip()
+            subject = request.form.get("subject", "").strip()
+            form_class = request.form.get("form", "").strip()
+            file = request.files.get("file")
+            link = request.form.get("link", "").strip()
+
+            if not title or not subject or not form_class:
+                flash("All fields are required!", "danger")
+                return redirect(url_for("student_dashboard"))
+
+            # Case 1: Google Drive link
+            if link:
+                if "drive.google.com/file/d/" in link:
+                    file_id = link.split("/d/")[1].split("/")[0]
+                    link = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+            # Case 2: File upload
+            elif file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+                file.save(file_path)
+                link = url_for("static", filename=f"materials/{filename}")
+
+            else:
+                flash("You must provide either a file or a valid Google Drive link.", "danger")
+                return redirect(url_for("student_dashboard"))
+
+            # Save to DB
+            new_material = RevisionMaterial(
+                title=title,
+                subject=subject,
+                form=form_class,
+                link=link,
+                uploaded_by="student",          # Optional: track who uploaded
+                uploaded_by_id=session["user_id"]
+            )
+            db.add(new_material)
+            db.commit()
+            flash("✅ Material uploaded successfully!", "success")
+        finally:
+            db.close()
+
+        return redirect(url_for("student_dashboard"))
+
+    return render_template("students/upload_material.html")
+
+
 @app.route('/mark_paid/<int:student_id>')
-@role_required("admin")
+@role_required("admin", "coordinator")
 def mark_paid(student_id):
     db = SessionLocal()
     try:
@@ -705,7 +782,7 @@ def mark_paid(student_id):
     return redirect(url_for("admin_dashboard"))
 
 @app.route('/mark_blocked/<int:student_id>')
-@role_required("admin")
+@role_required("admin", "coordinator")
 def mark_blocked(student_id):
     db = SessionLocal()
     try:
@@ -730,7 +807,7 @@ def mark_blocked(student_id):
 # AJAX endpoints (admin)
 # -----------------------
 @app.route("/api/add_item", methods=["POST"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def add_item():
     data = request.json
     db = SessionLocal()
@@ -768,7 +845,7 @@ def add_item():
         db.close()
 
 @app.route("/api/update_item/<string:item_type>/<int:item_id>", methods=["PUT"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def update_item(item_type, item_id):
     data = request.json
     db = SessionLocal()
@@ -789,7 +866,7 @@ def update_item(item_type, item_id):
         db.close()
 
 @app.route("/api/delete_item/<string:item_type>/<int:item_id>", methods=["DELETE"])
-@role_required("admin")
+@role_required("admin", "coordinator")
 def delete_item(item_type, item_id):
     db = SessionLocal()
     try:
@@ -966,7 +1043,7 @@ def teacher_delete_material(material_id):
 # Manage teachers (admin)
 # -----------------------
 @app.route("/admin/manage_teachers")
-@role_required("admin")
+@role_required("admin", "coordinator")
 def manage_teachers():
     db = SessionLocal()
     try:
@@ -976,7 +1053,7 @@ def manage_teachers():
         db.close()
 
 @app.route("/admin/approve_teacher/<int:teacher_id>")
-@role_required("admin")
+@role_required("admin", "coordinator")
 def approve_teacher(teacher_id):
     db = SessionLocal()
     try:
@@ -993,7 +1070,7 @@ def approve_teacher(teacher_id):
     return redirect(url_for("manage_teachers"))
 
 @app.route("/admin/block_teacher/<int:teacher_id>")
-@role_required("admin")
+@role_required("admin", "coordinator")
 def block_teacher(teacher_id):
     db = SessionLocal()
     try:

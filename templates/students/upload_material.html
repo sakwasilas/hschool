@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Upload Revision Material</h2>
+  <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_material') }}">
+    <div class="mb-3">
+      <label for="title" class="form-label">Title</label>
+      <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+
+    {% if current_user.role == 'teacher' %}
+    <div class="mb-3">
+      <label for="class_id" class="form-label">Class</label>
+      <select name="class_id" id="class_id" class="form-select" required>
+        {% for cls in teacher_classes %}
+        <option value="{{ cls.id }}">{{ cls.title }} - {{ cls.subject }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% elif current_user.role in ['student','admin','coordinator'] %}
+    <div class="mb-3">
+      <label for="class_id" class="form-label">Class</label>
+      <select name="class_id" id="class_id" class="form-select" required>
+        {% for cls in all_classes %}
+        <option value="{{ cls.id }}">{{ cls.title }} - {{ cls.subject }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+      <label for="material_file" class="form-label">Select File</label>
+      <input type="file" class="form-control" id="material_file" name="material_file" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Upload</button>
+  </form>
+</div>
+{% endblock %}

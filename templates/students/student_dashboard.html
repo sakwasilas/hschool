@@ -32,37 +32,14 @@
       z-index: 1040;
     }
 
-    .sidebar h5 {
-      color: #3b82f6;
-      font-weight: bold;
-      margin-top: 0.5rem;
-    }
-
-    .sidebar a {
-      color: #60a5fa;
-      text-decoration: none;
-      font-weight: 500;
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-
-    .sidebar a:hover {
-      color: #3b82f6;
-      text-decoration: underline;
-    }
+    .sidebar h5 { color: #3b82f6; font-weight: bold; margin-top: 0.5rem; }
+    .sidebar a { color: #60a5fa; text-decoration: none; font-weight: 500; display: block; margin-bottom: 0.5rem; }
+    .sidebar a:hover { color: #3b82f6; text-decoration: underline; }
 
     @media (max-width: 991px) {
-      .sidebar {
-        transform: translateX(-100%);
-      }
-
-      .sidebar.active {
-        transform: translateX(0);
-      }
-
-      body.sidebar-open {
-        margin-left: 250px;
-      }
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.active { transform: translateX(0); }
+      body.sidebar-open { margin-left: 250px; }
     }
 
     main {
@@ -72,13 +49,8 @@
     }
 
     @media (max-width: 991px) {
-      main {
-        margin-left: 0;
-      }
-
-      body.sidebar-open main {
-        margin-left: 250px;
-      }
+      main { margin-left: 0; }
+      body.sidebar-open main { margin-left: 250px; }
     }
 
     .sidebar-toggle {
@@ -113,10 +85,7 @@
       flex: 1 1 100px;
       transition: transform 0.2s;
     }
-
-    .stat:hover {
-      transform: translateY(-2px);
-    }
+    .stat:hover { transform: translateY(-2px); }
 
     .section-title {
       font-weight: 600;
@@ -133,11 +102,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       transition: transform 0.2s, box-shadow 0.2s;
     }
-
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
 
     iframe, video {
       border-radius: 10px;
@@ -151,9 +116,7 @@
 
     /* Prevent built-in download buttons */
     iframe::-internal-media-controls-download-button,
-    video::-internal-media-controls-download-button {
-      display: none;
-    }
+    video::-internal-media-controls-download-button { display: none; }
 
     footer {
       background-color: #1f2937;
@@ -165,22 +128,12 @@
     }
 
     /* Fullscreen PDF Modal */
-    .modal-fullscreen .modal-content {
-      height: 100vh;
-      background-color: #000;
-    }
-    .modal-header {
-      background-color: #111;
-      color: white;
-      border-bottom: none;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    .modal-fullscreen .modal-content { height: 100vh; background-color: #000; }
+    .modal-header { background-color: #111; color: white; border-bottom: none; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body oncontextmenu="return false;">
-  <h1><center>ACE EDUCATION</center></h1>
+  <h1 class="text-center">ACE EDUCATION</h1>
 
   <!-- Sidebar -->
   <nav id="sidebar" class="sidebar">
@@ -204,18 +157,9 @@
     </div>
 
     <div class="top-bar">
-      <div class="stat">
-        <h5>{{ live_classes|length }}</h5>
-        <small>Live Classes</small>
-      </div>
-      <div class="stat" style="background: linear-gradient(135deg, #10b981, #34d399);">
-        <h5>{{ revision_materials|length }}</h5>
-        <small>Materials</small>
-      </div>
-      <div class="stat" style="background: linear-gradient(135deg, #f97316, #fb923c);">
-        <h5>{{ videos|length }}</h5>
-        <small>Videos</small>
-      </div>
+      <div class="stat"><h5>{{ live_classes|length }}</h5><small>Live Classes</small></div>
+      <div class="stat" style="background: linear-gradient(135deg, #10b981, #34d399);"><h5>{{ revision_materials|length }}</h5><small>Materials</small></div>
+      <div class="stat" style="background: linear-gradient(135deg, #f97316, #fb923c);"><h5>{{ videos|length }}</h5><small>Videos</small></div>
     </div>
 
     {% if not student.is_active %}
@@ -249,6 +193,22 @@
       {% else %}
       <p class="text-muted">No live classes available yet.</p>
       {% endfor %}
+    </div>
+
+    <!-- Upload Material Form -->
+    <div class="section-title">⬆️ Upload Revision Material</div>
+    <div class="card mb-4 p-3">
+      <form action="{{ url_for('student_upload_material') }}" method="POST" enctype="multipart/form-data" class="row g-3 align-items-center">
+        <div class="col-md-8">
+          <input type="text" name="title" class="form-control form-control-sm" placeholder="Material Title" required>
+        </div>
+        <div class="col-md-8">
+          <input type="file" name="material_file" class="form-control form-control-sm" required>
+        </div>
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-success btn-sm w-100">Upload Material</button>
+        </div>
+      </form>
     </div>
 
     <!-- Revision Materials -->
@@ -340,7 +300,6 @@
       modal.show();
     }
 
-    // Toggle fullscreen/windowed mode
     document.getElementById("toggleSizeBtn").addEventListener("click", function() {
       const modalDialog = document.querySelector("#pdfModal .modal-dialog");
       modalDialog.classList.toggle("modal-fullscreen");
@@ -348,4 +307,3 @@
   </script>
 </body>
 </html>
-

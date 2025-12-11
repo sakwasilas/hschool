@@ -52,10 +52,6 @@ class CompleteProfile(Base):
         self.guardian_name = guardian_name
         self.form = form
 
-
-# =========================
-# LiveClass Model
-# =========================
 class LiveClass(Base):
     __tablename__ = "live_classes"
 
@@ -63,19 +59,27 @@ class LiveClass(Base):
     title = Column(String(200), nullable=False)
     link = Column(String(500), nullable=False)
     time = Column(String(50), nullable=True)
-    form = Column(String(200), nullable=True)  # Optional: specify which form/class can access
-    subject = Column(String(100), nullable=True)  # Optional: specify subject (e.g., Math, Science)
+    form = Column(String(200), nullable=True)
+    subject = Column(String(100), nullable=True)
     active = Column(Boolean, default=False)
+
+    # Correct foreign key reference
+    teacher_id = Column(Integer, ForeignKey("teachers.id"), nullable=True)
+    teacher = relationship("Teacher", backref="live_classes")
+
+
+# models.py
 
 class RevisionMaterial(Base):
     __tablename__ = "revision_materials"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(200), nullable=False)
-    subject = Column(String(100), nullable=True)  # Only define once
-    form = Column(String(20), nullable=True)
-    link = Column(String(255), nullable=True)  # Add this for external links like Google Drive
-    file_path = Column(String(255), nullable=True)  # Optional: for uploaded files
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
+    subject = Column(String, nullable=False)
+    form = Column(String, nullable=True)
+    link = Column(String, nullable=False)
+    uploaded_by = Column(String, nullable=True)     # 'student', 'teacher', 'admin'
+    uploaded_by_id = Column(Integer, nullable=True) # ID of the uploader
 
 # =========================
 # Video Model
